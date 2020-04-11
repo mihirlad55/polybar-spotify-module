@@ -16,12 +16,15 @@ OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
 
 
 spotify-listener: $(OBJS)
+	mkdir -p $(BIN_DIR)
 	$(CC) -o $(BIN_DIR)/spotify-listener $^ $(CFLAGS) $(LIBS_INC)
 
 $(ODIR)/%.o: %.c $(DEPS)
+	mkdir -p $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS) $(LIBS_INC)
 
 debug: $(OBJS)
+	mkdir -p $(BIN_DIR)
 	$(CC) -g -o $(BIN_DIR)/spotify-listener $^ $(CFLAGS) $(LIBS_INC)
 
 .PHONY: clean
