@@ -1,2 +1,4 @@
 *.o
 .vgcore.*
+bin/
+obj/
