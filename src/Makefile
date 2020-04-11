@@ -14,6 +14,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 _OBJS = spotify-listener.o utils.o
 OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
 
+debug: CFLAGS += -g
 
 spotify-listener: $(OBJS)
 	mkdir -p $(BIN_DIR)
