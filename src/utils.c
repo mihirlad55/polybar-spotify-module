@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <time.h>
+#include <errno.h>
+
 
 void print_string_iter(DBusMessageIter *iter) {
     int type = dbus_message_iter_get_arg_type(iter);
@@ -75,4 +78,22 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *array_iter, DBusMessageIter
     }
 
     return FALSE;
+}
+
+dbus_bool_t msleep(long milliseconds) {
+    struct timespec ts;
+    int res;
+
+    if (milliseconds < 0) { return FALSE; }
+
+    time_t sec = milliseconds / 1000;
+    long ns = (milliseconds % 1000) * 1000 * 1000;
+
+    ts.tv_sec = sec;
+    ts.tv_nsec = ns;
+
+    do { res = nanosleep(&ts, &ts); }
+    while (res && errno == EINTR);
+
+    return TRUE;
 }

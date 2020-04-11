@@ -16,5 +16,6 @@ dbus_bool_t recurse_iter_of_signature(DBusMessageIter *iter, DBusMessageIter
 dbus_bool_t iter_go_to_key(DBusMessageIter *array_iter, DBusMessageIter
         *entry_iter, char *key);
 
+dbus_bool_t msleep(long milliseconds);
 
 #endif
