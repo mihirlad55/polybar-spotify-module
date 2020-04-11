@@ -61,21 +61,24 @@ dbus_bool_t spotify_exited() {
     }
 }
 
-dbus_bool_t send_ipc_polybar(char *message) {
-    FILE *fp;
+dbus_bool_t send_ipc_polybar(const char *message) {
+    char **paths;
+    size_t num_of_paths;
+    // Pass address of pointer to array of strings
+    get_polybar_ipc_paths(POLYBAR_IPC_DIRECTORY, &paths, &num_of_paths);
 
-    fp = fopen("/tmp/polybar_mqueue.352483", "w");
+    for (size_t i = 0; i < num_of_paths; i++) {
+        FILE *fp;
 
-    fprintf(fp, "%s", message);
-    printf("%s %s", message, "sent to polybar queue\n");
+        fp = fopen(paths[i], "w");
 
-    fclose(fp);
+        fprintf(fp, "%s", message);
+        printf("%s %s", "Sending the following message to polybar: ", message);
 
-    fp = fopen("/tmp/polybar_mqueue.352484", "w");
-    fprintf(fp, "%s", message);
-    printf("%s %s", message, "sent to polybar queue\n");
+        fclose(fp);
+    }
 
-    fclose(fp);
+    return TRUE;
 }
 
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
@@ -206,7 +209,6 @@ int main() {
     DBusError err;
 
     dbus_error_init(&err);
-
     
     // Connect to session bus
     if ( !(connection = dbus_bus_get(DBUS_BUS_SESSION, &err)) ) {

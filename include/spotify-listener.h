@@ -1,7 +1,7 @@
 #ifndef _SPOTIFY_LISTENER_H_
 #define _SPOTIFY_LISTENER_H_
 
-dbus_bool_t send_ipc_polybar(char *message);
+dbus_bool_t send_ipc_polybar(const char *message);
 
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         DBusMessage *message, void *user_data);

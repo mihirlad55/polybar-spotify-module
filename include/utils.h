@@ -18,4 +18,8 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *array_iter, DBusMessageIter
 
 dbus_bool_t msleep(long milliseconds);
 
+dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[], size_t *num_of_paths);
+
+char* join_path(const char *p1, const char *p2);
+
 #endif
