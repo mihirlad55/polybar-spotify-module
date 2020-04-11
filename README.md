@@ -5,7 +5,7 @@ polybar when a track is playing/paused. This is still a basic implementation
 and lacks a status script and some polish.
 
 
-# How it Works
+## How it Works
 The program connects to the DBus Session Bus and listens for two particular
 signals:
 
