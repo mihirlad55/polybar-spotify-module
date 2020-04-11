@@ -29,7 +29,7 @@ a song is playing/paused.
 - Practice/learn low-level C
 - Reduce number of dependencies
 - Make something as lightweight as possible by directly interfacing with DBus
-- For fun ;)
+- For fun 😜
 
 
 ## Credits
