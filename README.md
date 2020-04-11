@@ -34,4 +34,4 @@ a song is playing/paused.
 
 ## Credits
 Inspired by the python implementation by
-[dietervanhoof](https://github.com/dietervanhoof).
+[dietervanhoof](https://github.com/dietervanhoof): https://github.com/dietervanhoof/polybar-spotify-controls
