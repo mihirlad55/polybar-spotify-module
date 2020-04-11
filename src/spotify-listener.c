@@ -14,15 +14,68 @@
 
 const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 
+typedef enum { PLAYING, PAUSED, EXITED } spotify_state;
+
+spotify_state CURRENT_SPOTIFY_STATE = EXITED;
+
+dbus_bool_t spotify_playing() {
+    if (CURRENT_SPOTIFY_STATE != PLAYING) {
+        // Show pause, next, and previous button
+        // Without sleep, requests are sometimes ignored
+        send_ipc_polybar("hook:module/playpause2\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/previous2\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/next2\n");
+        msleep(5);
+        CURRENT_SPOTIFY_STATE = PLAYING;
+    }
+}
+
+dbus_bool_t spotify_paused() {
+    if (CURRENT_SPOTIFY_STATE != PAUSED) {
+        // Show play, next, and previous button
+        // Without sleep, requests are sometimes ignored
+        send_ipc_polybar("hook:module/playpause3\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/previous2\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/next2\n");
+        msleep(5);
+        CURRENT_SPOTIFY_STATE = PAUSED;
+    }
+}
+
+dbus_bool_t spotify_exited() {
+    if (CURRENT_SPOTIFY_STATE != EXITED) {
+        // Hide all buttons and track display
+        // Without sleep, requests are sometimes ignored
+        send_ipc_polybar("hook:module/playpause1\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/previous1\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/next1\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/spotify1\n");
+        CURRENT_SPOTIFY_STATE = EXITED;
+    }
+}
+
 dbus_bool_t send_ipc_polybar(char *message) {
     FILE *fp;
 
-    fp = fopen("/tmp/polybar_mqueue.3905", "w");
+    fp = fopen("/tmp/polybar_mqueue.352483", "w");
 
-    fprintf(fp, "%s\n", message);
+    fprintf(fp, "%s", message);
+    printf("%s %s", message, "sent to polybar queue\n");
 
     fclose(fp);
-    
+
+    fp = fopen("/tmp/polybar_mqueue.352484", "w");
+    fprintf(fp, "%s", message);
+    printf("%s %s", message, "sent to polybar queue\n");
+
+    fclose(fp);
 }
 
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
@@ -100,10 +153,10 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
         if (strcmp(value.str, "Paused") == 0) {
             printf("Song paused\n");
-            send_ipc_polybar("hook:module/playpause3");
+            spotify_paused();
         } else if (strcmp(value.str, "Playing") == 0) {
             printf("Song is playing\n");
-            send_ipc_polybar("hook:module/playpause2");
+            spotify_playing();
         }
     }
 
@@ -132,10 +185,7 @@ DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
     if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
             strcmp(new_owner, "") == 0) {
         printf("Spotify disconnected\n");
-        // Hide pause button
-        send_ipc_polybar("hook:module/playpause1");
-        // Hide track info
-        send_ipc_polybar("hook:module/spotify1"); 
+        spotify_exited();
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 

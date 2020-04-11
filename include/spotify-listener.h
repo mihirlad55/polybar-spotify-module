@@ -11,4 +11,10 @@ DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
 
 void free_user_data(void *memory);
 
+dbus_bool_t spotify_playing();
+
+dbus_bool_t spotify_paused();
+
+dbus_bool_t spotify_exited();
+
 #endif
