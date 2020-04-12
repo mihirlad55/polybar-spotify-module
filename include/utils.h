@@ -12,7 +12,7 @@ dbus_bool_t recurse_iter_of_type(DBusMessageIter *iter,
 
 dbus_bool_t recurse_iter_of_signature(DBusMessageIter *iter,
                                       DBusMessageIter *subiter,
-                                      char *signature);
+                                      const char *signature);
 
 dbus_bool_t iter_go_to_key(DBusMessageIter *array_iter,
                            DBusMessageIter *entry_iter, const char *key);
@@ -21,6 +21,9 @@ dbus_bool_t iter_try_step_into_type(DBusMessageIter *iter, int type);
 
 dbus_bool_t iter_try_step_to_key(DBusMessageIter *element_iter,
                                  const char *key);
+
+dbus_bool_t iter_try_step_into_signature(DBusMessageIter *iter,
+                                         const char *signature);
 
 dbus_bool_t msleep(long milliseconds);
 

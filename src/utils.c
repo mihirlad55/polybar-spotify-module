@@ -51,7 +51,7 @@ dbus_bool_t recurse_iter_of_type(DBusMessageIter *iter,
 
 dbus_bool_t recurse_iter_of_signature(DBusMessageIter *iter,
                                       DBusMessageIter *subiter,
-                                      char *signature) {
+                                      const char *signature) {
     char *iter_signature = dbus_message_iter_get_signature(iter);
     dbus_bool_t res = FALSE;
 
@@ -116,6 +116,17 @@ dbus_bool_t iter_try_step_to_key(DBusMessageIter *element_iter,
     if (!iter_go_to_key(element_iter, &kv_iter, key)) return FALSE;
 
     *element_iter = kv_iter;
+
+    return TRUE;
+}
+
+dbus_bool_t iter_try_step_into_signature(DBusMessageIter *iter,
+                                         const char *signature) {
+    DBusMessageIter sub_iter;
+
+    if (!recurse_iter_of_signature(iter, &sub_iter, signature)) return FALSE;
+
+    *iter = sub_iter;
 
     return TRUE;
 }
