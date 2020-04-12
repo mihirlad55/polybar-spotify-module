@@ -20,6 +20,10 @@ EXE_DEPS = $(patsubst %,$(IDIR)/%,$(_EXE_DEPS))
 _EXE_OBJS = spotify-listener.o spotify-status.o
 EXE_OBJS = $(patsubst %,$(ODIR)/%,$(_EXE_OBJS))
 
+_EXES = spotify-listener spotify-status
+EXES = $(patsubst %,$(BIN_DIR)/%,$(_EXES))
+
+INSTALL_DIR = ~/.scripts/polybar/spotify
 
 debug: CFLAGS += -g
 
@@ -27,6 +31,10 @@ debug: CFLAGS += -g
 all: spotify-status spotify-listener
 
 debug: spotify-status spotify-listener
+
+install: spotify-status spotify-listener
+	mkdir -p $(INSTALL_DIR)
+	cp $(EXES) $(INSTALL_DIR)
 
 spotify-listener: $(OBJS) $(ODIR)/spotify-listener.o
 	mkdir -p $(BIN_DIR)
