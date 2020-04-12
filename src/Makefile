@@ -23,7 +23,7 @@ EXE_OBJS = $(patsubst %,$(ODIR)/%,$(_EXE_OBJS))
 _EXES = spotify-listener spotify-status
 EXES = $(patsubst %,$(BIN_DIR)/%,$(_EXES))
 
-INSTALL_DIR = ~/.scripts/polybar/spotify
+INSTALL_DIR = /usr/local/bin
 
 debug: CFLAGS += -g
 
