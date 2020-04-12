@@ -116,50 +116,54 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
-
     DBusMessageIter sub_iter;
-    DBusMessageIter entry_iter;
-    DBusMessageIter variant_iter;
-    DBusMessageIter array_iter;
-    DBusMessageIter value_iter;
-    DBusMessageIter final_iter;
-    
-    // Recurse into array
-    if (!recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY)) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    // Go to value with Metadata key
-    if (!iter_go_to_key(&sub_iter, &entry_iter, "Metadata")) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    // Recurse into variant value
-    if (!recurse_iter_of_type(&entry_iter, &variant_iter, DBUS_TYPE_VARIANT)) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    // Recurse into array of metadata
-    if (!recurse_iter_of_signature(&variant_iter, &array_iter, "a{sv}")) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    // Go to value with key mpris:trackid
-    if (!iter_go_to_key(&array_iter, &value_iter, "mpris:trackid")) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    if (!recurse_iter_of_type(&value_iter, &final_iter, DBUS_TYPE_VARIANT)) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    current_type = dbus_message_iter_get_arg_type(&final_iter);
-    if (!current_type == DBUS_TYPE_STRING) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    DBusBasicValue value;
-    dbus_message_iter_get_basic(&final_iter, &value);
 
-    if (strncmp(value.str, "spotify", 7) == 0) {
+    // Recurse into array
+    if (!(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
+    // Go to value with Metadata key
+    iter_try_step_to_key(&sub_iter, "Metadata") &&
+    // Step into variant value
+    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+    // Step into array of metadata
+    iter_try_step_into_signature(&sub_iter, "a{sv}") &&
+    // Go to value with key mpris:trackid
+    iter_try_step_to_key(&sub_iter, "mpris:trackid") &&
+    // Step into container
+    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+    // Verify string type
+    dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+
+    DBusBasicValue value;
+
+    dbus_message_iter_get_basic(&sub_iter, &value);
+    const char *trackid = value.str;
+
+    if (strncmp(trackid, "spotify", 7) == 0) {
         printf("IT IS SPOTIFY\n");
         is_spotify = TRUE;
     }
 
     if (is_spotify) {
         // Recurse into array
-        if (!recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY)) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        DBusMessageIter status_iter;
-        if (!iter_go_to_key(&sub_iter, &entry_iter, "PlaybackStatus")) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        // Recurse into variant value
-        if (!recurse_iter_of_type(&entry_iter, &status_iter, DBUS_TYPE_VARIANT)) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        current_type = dbus_message_iter_get_arg_type(&status_iter);
-        if (!current_type == DBUS_TYPE_STRING) return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        dbus_message_iter_get_basic(&status_iter, &value);
+        if (!(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
+                    // Step to PlaybackStatus key
+                    iter_try_step_to_key(&sub_iter, "PlaybackStatus") &&
+                    // Recurse into variant value
+                    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+                    // Verify string type
+                    dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
+            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        }
 
-        if (strcmp(value.str, "Paused") == 0) {
+        dbus_message_iter_get_basic(&sub_iter, &value);
+        const char *status = value.str;
+
+        if (strcmp(status, "Paused") == 0) {
             printf("Song paused\n");
             spotify_paused();
-        } else if (strcmp(value.str, "Playing") == 0) {
+        } else if (strcmp(status, "Playing") == 0) {
             printf("Song is playing\n");
             spotify_playing();
         }
