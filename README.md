@@ -1,8 +1,9 @@
 # Polybar Spotify Player
 
 This is a pure C implementation of an external polybar module that signals
-polybar when a track is playing/paused. This is still a basic implementation
-and lacks a status script and some polish.
+polybar when a track is playing/paused and when the track changes. There is
+also a program that retreives the title and artist of the currently playing
+song on spotify.
 
 
 ## How it Works
@@ -16,13 +17,12 @@ Using this information, it sends messages to spotify polybar custom/IPC modules
 to show/hide spotify controls and display the play/pause icon based on whether
 a song is playing/paused.
 
+To retreive status information, the program calls a method over DBus to get
+the track information from spotify.
+
 
 ## Requirements
 `dbus`
-
-
-## Future Work
-- Status program to retreive latest track information
 
 
 ## Why Did I Make this in C
