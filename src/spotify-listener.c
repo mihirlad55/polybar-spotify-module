@@ -28,6 +28,8 @@ dbus_bool_t spotify_playing() {
         msleep(5);
         send_ipc_polybar("hook:module/next2\n");
         msleep(5);
+        send_ipc_polybar("hook:module/spotify2\n");
+        msleep(5);
         CURRENT_SPOTIFY_STATE = PLAYING;
     }
 }
@@ -41,6 +43,8 @@ dbus_bool_t spotify_paused() {
         send_ipc_polybar("hook:module/previous2\n");
         msleep(5);
         send_ipc_polybar("hook:module/next2\n");
+        msleep(5);
+        send_ipc_polybar("hook:module/spotify2\n");
         msleep(5);
         CURRENT_SPOTIFY_STATE = PAUSED;
     }
