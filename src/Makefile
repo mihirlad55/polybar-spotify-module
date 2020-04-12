@@ -5,31 +5,43 @@ CFLAGS = $(shell pkg-config --cflags dbus-1)
 LIBS_INC := $(foreach lib,$(LIBS),-l$(lib))
 
 IDIR = ../include
-ODIR = obj
-BIN_DIR = bin
+ODIR = ../obj
+BIN_DIR = ../bin
 
-_DEPS = spotify-listener.h utils.h
+_DEPS = utils.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJS = spotify-listener.o utils.o
+_OBJS = utils.o
 OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
+
+_EXE_DEPS = spotify-listener.h spotify-status.h
+EXE_DEPS = $(patsubst %,$(IDIR)/%,$(_EXE_DEPS))
+
+_EXE_OBJS = spotify-listener.o spotify-status.o
+EXE_OBJS = $(patsubst %,$(ODIR)/%,$(_EXE_OBJS))
+
 
 debug: CFLAGS += -g
 
-spotify-listener: $(OBJS)
+
+all: spotify-status spotify-listener
+
+debug: spotify-status spotify-listener
+
+spotify-listener: $(OBJS) $(ODIR)/spotify-listener.o
 	mkdir -p $(BIN_DIR)
 	$(CC) -o $(BIN_DIR)/spotify-listener $^ $(CFLAGS) $(LIBS_INC)
 
-$(ODIR)/%.o: %.c $(DEPS)
+spotify-status: $(OBJS) $(ODIR)/spotify-status.o
+	mkdir -p $(BIN_DIR)
+	$(CC) -o $(BIN_DIR)/spotify-status $^ $(CFLAGS) $(LIBS_INC)
+
+$(ODIR)/%.o: %.c $(DEPS) $(EXE_DEPS)
 	mkdir -p $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS) $(LIBS_INC)
-
-debug: $(OBJS)
-	mkdir -p $(BIN_DIR)
-	$(CC) -g -o $(BIN_DIR)/spotify-listener $^ $(CFLAGS) $(LIBS_INC)
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core vgcore.* $(IDIR)/*~
+	rm -f $(ODIR)/*.o *~ core vgcore.* $(IDIR)/*~ $(BIN_DIR)/*
 
