@@ -76,7 +76,9 @@ dbus_bool_t send_ipc_polybar(const char *message) {
         printf("%s %s", "Sending the following message to polybar: ", message);
 
         fclose(fp);
+        free(paths[i]);
     }
+    free(paths);
 
     return TRUE;
 }

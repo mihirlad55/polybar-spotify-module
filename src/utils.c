@@ -201,9 +201,11 @@ dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[],
         // Assign address of array to pointer to array
         *ptr_paths = paths;
     } else {
+        closedir(d);
         return FALSE;
     }
 
+    closedir(d);
     return TRUE;
 }
 
