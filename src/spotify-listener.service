@@ -1,0 +1,12 @@
+[Unit]
+Description=A program that monitors Spotify DBus signals and communicates with polybar over IPC to control the polybar spotify modules.
+After=graphical.target
+
+[Service]
+ExecStart=/usr/local/bin/spotify-listener
+Type=simple
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
+

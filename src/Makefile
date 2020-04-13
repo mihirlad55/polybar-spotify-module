@@ -4,6 +4,9 @@ CFLAGS = $(shell pkg-config --cflags dbus-1)
 
 LIBS_INC := $(foreach lib,$(LIBS),-l$(lib))
 
+SERVICE_FILE_NAME = spotify-listener.service
+SERVICE_INSTALL_PATH = /lib/systemd/user
+
 IDIR = ../include
 ODIR = ../obj
 BIN_DIR = ../bin
@@ -35,6 +38,14 @@ debug: spotifyctl spotify-listener
 install: spotifyctl spotify-listener
 	mkdir -p $(INSTALL_DIR)
 	cp $(EXES) $(INSTALL_DIR)
+	cp $(SERVICE_FILE_NAME) $(SERVICE_INSTALL_PATH)
+	@echo
+	@echo "You can follow the below steps if you are using systemd"
+	@echo "To enable spotify-listener at startup run:"
+	@echo "systemd --user enable spotify-listener"
+	@echo "To start spotify-listener right now, run:"
+	@echo "systemd --user start spotify-listener"
+
 
 spotify-listener: $(OBJS) $(ODIR)/spotify-listener.o
 	mkdir -p $(BIN_DIR)
