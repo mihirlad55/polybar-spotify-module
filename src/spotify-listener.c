@@ -23,13 +23,13 @@ dbus_bool_t spotify_playing() {
         // Show pause, next, and previous button
         // Without sleep, requests are sometimes ignored
         send_ipc_polybar("hook:module/playpause2\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/previous2\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/next2\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/spotify2\n");
-        msleep(5);
+        msleep(20);
         CURRENT_SPOTIFY_STATE = PLAYING;
     }
 }
@@ -39,13 +39,13 @@ dbus_bool_t spotify_paused() {
         // Show play, next, and previous button
         // Without sleep, requests are sometimes ignored
         send_ipc_polybar("hook:module/playpause3\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/previous2\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/next2\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/spotify2\n");
-        msleep(5);
+        msleep(20);
         CURRENT_SPOTIFY_STATE = PAUSED;
     }
 }
@@ -55,11 +55,11 @@ dbus_bool_t spotify_exited() {
         // Hide all buttons and track display
         // Without sleep, requests are sometimes ignored
         send_ipc_polybar("hook:module/playpause1\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/previous1\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/next1\n");
-        msleep(5);
+        msleep(20);
         send_ipc_polybar("hook:module/spotify1\n");
         CURRENT_SPOTIFY_STATE = EXITED;
     }
