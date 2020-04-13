@@ -9,6 +9,12 @@ char *get_song_artist_from_metadata(DBusMessage *msg);
 
 char *format_output(char *artist, char *title);
 
-int main();
+void get_status(DBusConnection *connection);
+
+void spotify_player_call(DBusConnection *connection, const char *method);
+
+void print_usage();
+
+int main(int argc, char *argv[]);
 
 #endif
