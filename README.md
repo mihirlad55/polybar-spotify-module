@@ -7,7 +7,11 @@ song on spotify.
 
 
 ## Requirements
-`dbus`
+DBus is used for listening to spotify track changes. Obviously you need spotify
+and polybar as well:
+`dbus polybar spotify`
+
+To compile the program, you will need `gcc`.
 
 
 ## How to Setup
