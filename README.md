@@ -75,7 +75,7 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; When spotify active
-hook-1 = echo ""
+hook-1 = echo "Previous"
 click-left = "spotifyctl -q previous"
 
 
@@ -85,7 +85,7 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; When spotify active
-hook-1 = echo ""
+hook-1 = echo "Next"
 click-left = "spotifyctl -q next"
 
 
@@ -95,9 +95,9 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; Playing
-hook-1 = echo ""
+hook-1 = echo "Pause"
 ; Paused
-hook-2 = echo ""
+hook-2 = echo "Play"
 click-left = "spotifyctl playpause"
 
 
@@ -105,17 +105,18 @@ click-left = "spotifyctl playpause"
 type = custom/ipc
 ; Default
 hook-0 = echo ""
-; Playing/paused show status
+; Playing/paused show song name and artist
 hook-1 = spotifyctl -q status
 ```
+You can replace the text for Pause/Play/Next/Previous with icons for each of
+the hooks.
 
-The squares above are icons that can't be loaded. You can use whatever text or
-symbols you want to substitute.
-
-Lastly, make sure the new spotify modules are part of your bar. Make sure the
-following is part of your modules.
+Lastly, make sure the new spotify modules are part of your bar. Make sure one of
+the following lines is part of your modules.
 ```
 modules-center = spotify previous playpause next
+modules-left = spotify previous playpause next
+modules-right = spotify previous playpause next
 ```
 
 ## How it Works
