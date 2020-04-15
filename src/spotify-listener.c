@@ -126,41 +126,46 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data) {
+    if (VERBOSE) printf("%s", "Running handle_media_player_signal\n");
     DBusMessageIter iter;
-
-    dbus_bool_t is_spotify = FALSE;
-
-    dbus_message_iter_init(message, &iter);
-    int current_type;
-
-    // Check if first string is org.mpris.MediaPlayer2.Player
-    if ((current_type = dbus_message_iter_get_arg_type(&iter)) !=
-        DBUS_TYPE_INVALID) {
-        if (current_type == DBUS_TYPE_STRING) {
-            DBusBasicValue value;
-            dbus_message_iter_get_basic(&iter, &value);
-
-            if (strcmp(value.str, "org.mpris.MediaPlayer2.Player") != 0) {
-                if (VERBOSE)
-                    printf("%s",
-                           "First string not org.mpris.MediaPlayer2.Player");
-                return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-            }
-        } else {
-            if (VERBOSE) printf("%s", "First element not string");
-            return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        }
-    } else {
-        if (VERBOSE) printf("%s", "No data in signal");
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
-    if (!dbus_message_iter_next(&iter)) {
-        if (VERBOSE) printf("%s", "Second element does not exist");
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
     DBusMessageIter sub_iter;
+    dbus_bool_t is_spotify = FALSE;
+    dbus_message_iter_init(message, &iter);
+
+    /**
+     * Format of PropertiesChanged signal
+     * string "org.mpris.MediaPlayer2.Player"
+     * array [
+     *     dict entry(
+     *         string "Metadata"
+     *         variant  array [
+     *             dict entry(
+     *                 string "mpris:trackid"
+     *                 variant  string "spotify:track:xxxxxxxxxxxxx"
+     *             )
+     *           .
+     *           .
+     *           .
+     *         ]
+     *     )
+     *     dict entry(
+     *         string "PlaybackStatus"
+     *         variant  string "Paused"
+     *     )
+     * ]
+     *
+     */
+
+    char *interface_name = iter_get_string(&iter);
+
+    if (interface_name != NULL && strcmp(interface_name, "org.mpris.MediaPlayer2.Player") != 0) {
+        if (VERBOSE) printf("%s", "Interface of PropertiesChanged signal not org.mpris.MediaPlayer2.Player");
+        free(interface_name);
+        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+    free(interface_name);
+
+    dbus_message_iter_next(&iter);
 
     // Recurse into array
     if (!(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
@@ -179,17 +184,17 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
-    DBusBasicValue value;
 
-    dbus_message_iter_get_basic(&sub_iter, &value);
-    const char *trackid = value.str;
-
-    if (strncmp(trackid, "spotify", 7) == 0) {
-        if (VERBOSE) printf("Spotify Detected\n");
+    char *trackid = iter_get_string(&sub_iter);
+    if (trackid != NULL && strncmp(trackid, "spotify", 7) == 0) {
         spotify_update_track(trackid);
         update_last_trackid(trackid);
         is_spotify = TRUE;
+
+        if (VERBOSE) printf("Spotify Detected\n");
     }
+
+    free(trackid);
 
     if (is_spotify) {
         // Recurse into array
@@ -203,18 +208,18 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
 
-        dbus_message_iter_get_basic(&sub_iter, &value);
-        const char *status = value.str;
+        char *status = iter_get_string(&sub_iter);
 
         if (strcmp(status, "Paused") == 0) {
             spotify_paused();
         } else if (strcmp(status, "Playing") == 0) {
             spotify_playing();
         }
+
+        free(status);
     }
 
     return DBUS_HANDLER_RESULT_HANDLED;
-    printf("Running handler\n");
 }
 
 DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
@@ -225,6 +230,14 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
     const char *name;
     const char *old_owner;
     const char *new_owner;
+
+    /**
+     * Format of NameOwnerChanged signal
+     * string "name"
+     * string "old owner"
+     * string "new owner"
+     *
+     */
 
     if (!dbus_message_get_args(message, NULL, DBUS_TYPE_STRING, &name,
                                DBUS_TYPE_STRING, &old_owner, DBUS_TYPE_STRING,
