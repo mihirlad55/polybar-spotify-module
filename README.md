@@ -13,6 +13,10 @@ and polybar as well:
 
 To compile the program, you will need `make`.
 
+You most likely already have the above packages installed. Systemd depends on
+DBus, and you wouldn't be looking at this, if you didn't have polybar and
+spotify installed.
+
 
 ## How to Setup
 
@@ -66,6 +70,8 @@ FontAwesome under the `[bar/<your bar name>]` section:
 [bar/main]
 font-1 = Font Awesome 5 Free:size=10;1
 ```
+Note that the font is specified in modules as a 1-based index, so `font-1` is
+specified by `format-font = 2`.
 
 Next, add the following spotify modules:
 ```
