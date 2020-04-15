@@ -111,7 +111,7 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
             fclose(fp);
 
             // Without sleep, requests are sometimes ignored
-            msleep(50);
+            msleep(10);
         }
         va_end(args);
 
