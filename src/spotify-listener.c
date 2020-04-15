@@ -10,6 +10,11 @@
 
 #include "../include/utils.h"
 
+#ifdef VERBOSE
+const dbus_bool_t VERBOSE = TRUE;
+#else
+const dbus_bool_t VERBOSE = FALSE;
+#endif
 
 const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 
@@ -44,6 +49,7 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
 
 dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
+        printf("Song is playing\n");
         // Show pause, next, and previous button
         if (send_ipc_polybar(4, "hook:module/playpause2",
                              "hook:module/previous2", "hook:module/next2",
@@ -57,6 +63,7 @@ dbus_bool_t spotify_playing() {
 
 dbus_bool_t spotify_paused() {
     if (CURRENT_SPOTIFY_STATE != PAUSED) {
+        printf("Song paused\n");
         // Show play, next, and previous button
         if (send_ipc_polybar(4, "hook:module/playpause3",
                              "hook:module/previous2", "hook:module/next2",
@@ -132,20 +139,20 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
             dbus_message_iter_get_basic(&iter, &value);
 
             if (strcmp(value.str, "org.mpris.MediaPlayer2.Player") != 0) {
-                printf("%s", "First string not org.mpris.MediaPlayer2.Player");
+                if (VERBOSE) printf("%s", "First string not org.mpris.MediaPlayer2.Player");
                 return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
             }
-        } else { 
-            printf("%s", "First element not string");
+        } else {
+            if (VERBOSE) printf("%s", "First element not string");
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
     } else {
-        printf("%s", "No data in signal");
+        if (VERBOSE) printf("%s", "No data in signal");
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
     if (!dbus_message_iter_next(&iter)) {
-        printf("%s", "Second element does not exist");
+        if (VERBOSE) printf("%s", "Second element does not exist");
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
@@ -174,7 +181,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
     const char *trackid = value.str;
 
     if (strncmp(trackid, "spotify", 7) == 0) {
-        printf("IT IS SPOTIFY\n");
+        if (VERBOSE) printf("Spotify Detected\n");
         spotify_update_track(trackid);
         update_last_trackid(trackid);
         is_spotify = TRUE;
@@ -196,10 +203,8 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         const char *status = value.str;
 
         if (strcmp(status, "Paused") == 0) {
-            printf("Song paused\n");
             spotify_paused();
         } else if (strcmp(status, "Playing") == 0) {
-            printf("Song is playing\n");
             spotify_playing();
         }
     }
@@ -211,7 +216,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
 DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
         DBusMessage *message, void *user_data) {
-    printf("Starting handler for name owner changed\n");
+    if (VERBOSE) printf("Starting handler for name owner changed\n");
 
     const char *name;
     const char *old_owner;
@@ -222,7 +227,6 @@ DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
             DBUS_TYPE_STRING, &old_owner,
             DBUS_TYPE_STRING, &new_owner,
             DBUS_TYPE_INVALID)) {
-        printf("NOT HANDLED\n");
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
@@ -291,7 +295,7 @@ int main() {
 
     // Read messages and call handlers when neccessary
     while (dbus_connection_read_write_dispatch(connection, -1)) {
-        printf("In dispatch loop\n");
+        if (VERBOSE) printf("In dispatch loop\n");
     }
 
 
