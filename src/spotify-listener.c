@@ -13,9 +13,34 @@
 
 const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 
+char *last_trackid = NULL;
+
 typedef enum { PLAYING, PAUSED, EXITED } spotify_state;
 
 spotify_state CURRENT_SPOTIFY_STATE = EXITED;
+
+dbus_bool_t update_last_trackid(const char *trackid) {
+    size_t size = strlen(trackid) + 1;
+
+    last_trackid = (char *)realloc(last_trackid, size);
+    last_trackid[0] = '\0';
+
+    strcpy(last_trackid, trackid);
+
+    if (last_trackid != NULL)
+        return TRUE;
+    else
+        return FALSE;
+}
+
+dbus_bool_t spotify_update_track(const char *current_trackid) {
+    if (last_trackid != NULL && strcmp(current_trackid, last_trackid) != 0) {
+        printf("%s", "Track changed\n");
+        // Send message to update track name
+        if (send_ipc_polybar(1, "hook:module/spotify2")) return TRUE;
+    }
+    return FALSE;
+}
 
 dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
@@ -150,6 +175,8 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
     if (strncmp(trackid, "spotify", 7) == 0) {
         printf("IT IS SPOTIFY\n");
+        spotify_update_track(trackid);
+        update_last_trackid(trackid);
         is_spotify = TRUE;
     }
 
