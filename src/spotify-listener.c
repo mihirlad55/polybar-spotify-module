@@ -40,7 +40,7 @@ dbus_bool_t update_last_trackid(const char *trackid) {
 
 dbus_bool_t spotify_update_track(const char *current_trackid) {
     if (last_trackid != NULL && strcmp(current_trackid, last_trackid) != 0) {
-        printf("%s", "Track changed\n");
+        puts("Track Changed");
         // Send message to update track name
         if (send_ipc_polybar(1, "hook:module/spotify2")) return TRUE;
     }
@@ -49,7 +49,7 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
 
 dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
-        printf("Song is playing\n");
+        puts("Song is playing");
         // Show pause, next, and previous button
         if (send_ipc_polybar(4, "hook:module/playpause2",
                              "hook:module/previous2", "hook:module/next2",
@@ -63,7 +63,7 @@ dbus_bool_t spotify_playing() {
 
 dbus_bool_t spotify_paused() {
     if (CURRENT_SPOTIFY_STATE != PAUSED) {
-        printf("Song paused\n");
+        puts("Song is paused");
         // Show play, next, and previous button
         if (send_ipc_polybar(4, "hook:module/playpause3",
                              "hook:module/previous2", "hook:module/next2",
@@ -104,7 +104,7 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
             const char *message = va_arg(args, char *);
 
             fp = fopen(paths[p], "w");
-            fprintf(fp, "%s\n", message);
+            fputs(message, fp);
             printf("%s%s%s%s%s\n", "Sending the message '", message, "' to '",
                    paths[p], "'");
 
@@ -126,7 +126,7 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data) {
-    if (VERBOSE) printf("%s", "Running handle_media_player_signal\n");
+    if (VERBOSE) puts("Running handle_media_player_signal");
     DBusMessageIter iter;
     DBusMessageIter sub_iter;
     dbus_bool_t is_spotify = FALSE;
@@ -161,9 +161,9 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
     if (interface_name != NULL &&
         strcmp(interface_name, "org.mpris.MediaPlayer2.Player") != 0) {
         if (VERBOSE)
-            printf("%s",
-                   "Interface of PropertiesChanged signal not "
-                   "org.mpris.MediaPlayer2.Player");
+            puts(
+                "Interface of PropertiesChanged signal not "
+                "org.mpris.MediaPlayer2.Player");
         free(interface_name);
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
@@ -194,7 +194,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         update_last_trackid(trackid);
         is_spotify = TRUE;
 
-        if (VERBOSE) printf("Spotify Detected\n");
+        if (VERBOSE) puts("Spotify Detected");
     }
 
     free(trackid);
@@ -228,7 +228,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data) {
-    if (VERBOSE) printf("Starting handler for name owner changed\n");
+    if (VERBOSE) puts("Starting handler for name owner changed");
 
     const char *name;
     const char *old_owner;
@@ -250,7 +250,7 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
 
     if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
         strcmp(new_owner, "") == 0) {
-        printf("Spotify disconnected\n");
+        puts("Spotify disconnected");
         spotify_exited();
         return DBUS_HANDLER_RESULT_HANDLED;
     }
@@ -275,7 +275,7 @@ int main() {
 
     // Connect to session bus
     if (!(connection = dbus_bus_get(DBUS_BUS_SESSION, &err))) {
-        fprintf(stderr, "%s\n", err.message);
+        fputs(err.message, stderr);
         return 1;
     }
 
@@ -283,34 +283,34 @@ int main() {
     // or spotify launching
     dbus_bus_add_match(connection, PROPERTIES_CHANGED_MATCH, &err);
     if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "%s\n", err.message);
+        fputs(err.message, stderr);
         return 1;
     }
 
     // Receive messages for NameOwnerChanged signal to detect spotify exiting
     dbus_bus_add_match(connection, NAME_OWNER_CHANGED_MATCH, &err);
     if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "%s\n", err.message);
+        fputs(err.message, stderr);
         return 1;
     }
 
     // Register handler for PropertiesChanged signal
     if (!dbus_connection_add_filter(connection, handle_media_player_signal,
                                     NULL, free_user_data)) {
-        fprintf(stderr, "%s", "Failed to add properties changed handler\n");
+        fputs("Failed to add properties changed handler", stderr);
         return 1;
     }
 
     // Register handler for NameOwnerChanged signal
     if (!dbus_connection_add_filter(connection, name_owner_changed_handler,
                                     NULL, free_user_data)) {
-        fprintf(stderr, "%s", "Failed to add NameOwnerChanged handler\n");
+        fputs("Failed to add NameOwnerChanged handler", stderr);
         return 1;
     }
 
     // Read messages and call handlers when neccessary
     while (dbus_connection_read_write_dispatch(connection, -1)) {
-        if (VERBOSE) printf("In dispatch loop\n");
+        if (VERBOSE) puts("In dispatch loop");
     }
 
     dbus_connection_unref(connection);

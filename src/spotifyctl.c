@@ -113,7 +113,7 @@ void get_status(DBusConnection *connection) {
     dbus_message_unref(msg);
 
     if (dbus_error_is_set(&err)) {
-        if (!SUPPRESS_ERRORS) fprintf(stderr, "%s\n", err.message);
+        if (!SUPPRESS_ERRORS) fputs(err.message, stderr);
         exit(1);
     }
 
@@ -142,14 +142,13 @@ void spotify_player_call(DBusConnection *connection, const char *method) {
     dbus_message_unref(msg);
 
     if (dbus_error_is_set(&err)) {
-        if (!SUPPRESS_ERRORS) fprintf(stderr, "%s\n", err.message);
+        if (!SUPPRESS_ERRORS) fputs(err.message, stderr);
         exit(1);
     }
 }
 
 void print_usage() {
-    printf(
-        "%s\n",
+    puts(
         "usage: spotifyctl [ -q ] status | play | pause | playpause | next | "
         "previous");
 }
@@ -169,7 +168,7 @@ int main(int argc, char *argv[]) {
 
     // Connect to session bus
     if (!(connection = dbus_bus_get(DBUS_BUS_SESSION, &err))) {
-        if (!SUPPRESS_ERRORS) fprintf(stderr, "%s\n", err.message);
+        if (!SUPPRESS_ERRORS) fputs(err.message, stderr);
         return 1;
     }
 
