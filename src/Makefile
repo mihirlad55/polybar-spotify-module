@@ -4,8 +4,8 @@ CFLAGS = $(shell pkg-config --cflags dbus-1)
 
 LIBS_INC := $(foreach lib,$(LIBS),-l$(lib))
 
-SERVICE_FILE_NAME = spotify-listener.service
-SERVICE_INSTALL_PATH = /lib/systemd/user
+PKG_NAME = polybar-spotify-module
+BASE_INSTALL_PREFIX = 
 
 IDIR = ../include
 ODIR = ../obj
@@ -26,7 +26,14 @@ EXE_OBJS = $(patsubst %,$(ODIR)/%,$(_EXE_OBJS))
 _EXES = spotify-listener spotifyctl
 EXES = $(patsubst %,$(BIN_DIR)/%,$(_EXES))
 
-INSTALL_DIR = /usr/local/bin
+LICENSE_FILE = ../LICENSE
+README_FILE = ../README.md
+SERVICE_FILE_NAME = spotify-listener.service
+
+BIN_INSTALL_DIR = /usr/local/bin
+LICENSE_INSTALL_PATH = /usr/share/licenses/$(PKG_NAME)/LICENSE
+README_INSTALL_PATH = /usr/share/doc/$(PKG_NAME)/README.md
+SERVICE_INSTALL_PATH = /usr/lib/systemd/user/spotify-listener.service
 
 debug: CFLAGS += -g
 
@@ -36,9 +43,10 @@ all: spotifyctl spotify-listener
 debug: spotifyctl spotify-listener
 
 install: spotifyctl spotify-listener
-	mkdir -p $(INSTALL_DIR)
-	cp $(EXES) $(INSTALL_DIR)
-	cp $(SERVICE_FILE_NAME) $(SERVICE_INSTALL_PATH)
+	install -Dm755 -t $(BASE_INSTALL_PREFIX)$(BIN_INSTALL_DIR) $(EXES) 
+	install -Dm644 $(LICENSE_FILE) $(BASE_INSTALL_PREFIX)$(LICENSE_INSTALL_PATH)
+	install -Dm644 $(README_FILE) $(BASE_INSTALL_PREFIX)$(README_INSTALL_PATH)
+	install -Dm644 $(SERVICE_FILE_NAME) $(BASE_INSTALL_PREFIX)$(SERVICE_INSTALL_PATH)
 	@echo
 	@echo "You can follow the below steps if you are using systemd"
 	@echo "To enable spotify-listener at startup run:"
