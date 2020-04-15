@@ -7,10 +7,12 @@
 dbus_bool_t send_ipc_polybar(int numOfMsgs, ...);
 
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
-        DBusMessage *message, void *user_data);
+                                             DBusMessage *message,
+                                             void *user_data);
 
-DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
-        DBusMessage *message, void *user_data);
+DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
+                                             DBusMessage *message,
+                                             void *user_data);
 
 void free_user_data(void *memory);
 

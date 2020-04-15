@@ -124,7 +124,8 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
 }
 
 DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
-        DBusMessage *message, void *user_data) {
+                                             DBusMessage *message,
+                                             void *user_data) {
     DBusMessageIter iter;
 
     dbus_bool_t is_spotify = FALSE;
@@ -133,13 +134,16 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
     int current_type;
 
     // Check if first string is org.mpris.MediaPlayer2.Player
-    if ( (current_type = dbus_message_iter_get_arg_type(&iter)) != DBUS_TYPE_INVALID ) {
+    if ((current_type = dbus_message_iter_get_arg_type(&iter)) !=
+        DBUS_TYPE_INVALID) {
         if (current_type == DBUS_TYPE_STRING) {
             DBusBasicValue value;
             dbus_message_iter_get_basic(&iter, &value);
 
             if (strcmp(value.str, "org.mpris.MediaPlayer2.Player") != 0) {
-                if (VERBOSE) printf("%s", "First string not org.mpris.MediaPlayer2.Player");
+                if (VERBOSE)
+                    printf("%s",
+                           "First string not org.mpris.MediaPlayer2.Player");
                 return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
             }
         } else {
@@ -160,18 +164,18 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
     // Recurse into array
     if (!(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
-    // Go to value with Metadata key
-    iter_try_step_to_key(&sub_iter, "Metadata") &&
-    // Step into variant value
-    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
-    // Step into array of metadata
-    iter_try_step_into_signature(&sub_iter, "a{sv}") &&
-    // Go to value with key mpris:trackid
-    iter_try_step_to_key(&sub_iter, "mpris:trackid") &&
-    // Step into container
-    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
-    // Verify string type
-    dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
+          // Go to value with Metadata key
+          iter_try_step_to_key(&sub_iter, "Metadata") &&
+          // Step into variant value
+          iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+          // Step into array of metadata
+          iter_try_step_into_signature(&sub_iter, "a{sv}") &&
+          // Go to value with key mpris:trackid
+          iter_try_step_to_key(&sub_iter, "mpris:trackid") &&
+          // Step into container
+          iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+          // Verify string type
+          dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
@@ -190,12 +194,12 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
     if (is_spotify) {
         // Recurse into array
         if (!(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
-                    // Step to PlaybackStatus key
-                    iter_try_step_to_key(&sub_iter, "PlaybackStatus") &&
-                    // Recurse into variant value
-                    iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
-                    // Verify string type
-                    dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
+              // Step to PlaybackStatus key
+              iter_try_step_to_key(&sub_iter, "PlaybackStatus") &&
+              // Recurse into variant value
+              iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+              // Verify string type
+              dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
 
@@ -213,25 +217,23 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
     printf("Running handler\n");
 }
 
-
-DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
-        DBusMessage *message, void *user_data) {
+DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
+                                             DBusMessage *message,
+                                             void *user_data) {
     if (VERBOSE) printf("Starting handler for name owner changed\n");
 
     const char *name;
     const char *old_owner;
     const char *new_owner;
 
-   if (!dbus_message_get_args(message, NULL,
-            DBUS_TYPE_STRING, &name,
-            DBUS_TYPE_STRING, &old_owner,
-            DBUS_TYPE_STRING, &new_owner,
-            DBUS_TYPE_INVALID)) {
+    if (!dbus_message_get_args(message, NULL, DBUS_TYPE_STRING, &name,
+                               DBUS_TYPE_STRING, &old_owner, DBUS_TYPE_STRING,
+                               &new_owner, DBUS_TYPE_INVALID)) {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
     if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
-            strcmp(new_owner, "") == 0) {
+        strcmp(new_owner, "") == 0) {
         printf("Spotify disconnected\n");
         spotify_exited();
         return DBUS_HANDLER_RESULT_HANDLED;
@@ -240,27 +242,26 @@ DBusHandlerResult name_owner_changed_handler (DBusConnection *connection,
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
+void free_user_data(void *memory) {}
 
-void free_user_data(void *memory) {
-
-}
-
-
-const char *PROPERTIES_CHANGED_MATCH = "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',path='/org/mpris/MediaPlayer2'";
-const char *NAME_OWNER_CHANGED_MATCH = "interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/freedesktop/DBus'";
+const char *PROPERTIES_CHANGED_MATCH =
+    "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',"
+    "path='/org/mpris/MediaPlayer2'";
+const char *NAME_OWNER_CHANGED_MATCH =
+    "interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/"
+    "freedesktop/DBus'";
 
 int main() {
     DBusConnection *connection;
     DBusError err;
 
     dbus_error_init(&err);
-    
+
     // Connect to session bus
-    if ( !(connection = dbus_bus_get(DBUS_BUS_SESSION, &err)) ) {
+    if (!(connection = dbus_bus_get(DBUS_BUS_SESSION, &err))) {
         fprintf(stderr, "%s\n", err.message);
         return 1;
     }
-
 
     // Receive messages for PropertiesChanged signal to detect track changes
     // or spotify launching
@@ -276,28 +277,25 @@ int main() {
         fprintf(stderr, "%s\n", err.message);
         return 1;
     }
-    
 
     // Register handler for PropertiesChanged signal
     if (!dbus_connection_add_filter(connection, handle_media_player_signal,
-                NULL, free_user_data)) {
+                                    NULL, free_user_data)) {
         fprintf(stderr, "%s", "Failed to add properties changed handler\n");
         return 1;
     }
 
     // Register handler for NameOwnerChanged signal
-    if(!dbus_connection_add_filter(connection, name_owner_changed_handler,
-                NULL, free_user_data)) {
+    if (!dbus_connection_add_filter(connection, name_owner_changed_handler,
+                                    NULL, free_user_data)) {
         fprintf(stderr, "%s", "Failed to add NameOwnerChanged handler\n");
         return 1;
     }
-
 
     // Read messages and call handlers when neccessary
     while (dbus_connection_read_write_dispatch(connection, -1)) {
         if (VERBOSE) printf("In dispatch loop\n");
     }
-
 
     dbus_connection_unref(connection);
     return 0;
