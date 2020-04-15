@@ -158,8 +158,12 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
     char *interface_name = iter_get_string(&iter);
 
-    if (interface_name != NULL && strcmp(interface_name, "org.mpris.MediaPlayer2.Player") != 0) {
-        if (VERBOSE) printf("%s", "Interface of PropertiesChanged signal not org.mpris.MediaPlayer2.Player");
+    if (interface_name != NULL &&
+        strcmp(interface_name, "org.mpris.MediaPlayer2.Player") != 0) {
+        if (VERBOSE)
+            printf("%s",
+                   "Interface of PropertiesChanged signal not "
+                   "org.mpris.MediaPlayer2.Player");
         free(interface_name);
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
@@ -183,7 +187,6 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
           dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
-
 
     char *trackid = iter_get_string(&sub_iter);
     if (trackid != NULL && strncmp(trackid, "spotify", 7) == 0) {
