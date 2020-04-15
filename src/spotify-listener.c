@@ -1,15 +1,14 @@
-#include <stdio.h>
-#include <inttypes.h>
-#include <dbus-1.0/dbus/dbus.h>
+#include "../include/spotify-listener.h"
 
+#include <dbus-1.0/dbus/dbus.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <stdlib.h>
-
 #include "../include/utils.h"
-
-#include "../include/spotify-listener.h"
 
 
 const char *POLYBAR_IPC_DIRECTORY = "/tmp";
@@ -21,67 +20,72 @@ spotify_state CURRENT_SPOTIFY_STATE = EXITED;
 dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
         // Show pause, next, and previous button
-        // Without sleep, requests are sometimes ignored
-        send_ipc_polybar("hook:module/playpause2\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/previous2\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/next2\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/spotify2\n");
-        msleep(20);
-        CURRENT_SPOTIFY_STATE = PLAYING;
+        if (send_ipc_polybar(4, "hook:module/playpause2",
+                             "hook:module/previous2", "hook:module/next2",
+                             "hook:module/spotify2")) {
+            CURRENT_SPOTIFY_STATE = PLAYING;
+            return TRUE;
+        }
     }
+    return FALSE;
 }
 
 dbus_bool_t spotify_paused() {
     if (CURRENT_SPOTIFY_STATE != PAUSED) {
         // Show play, next, and previous button
-        // Without sleep, requests are sometimes ignored
-        send_ipc_polybar("hook:module/playpause3\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/previous2\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/next2\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/spotify2\n");
-        msleep(20);
-        CURRENT_SPOTIFY_STATE = PAUSED;
+        if (send_ipc_polybar(4, "hook:module/playpause3",
+                             "hook:module/previous2", "hook:module/next2",
+                             "hook:module/spotify2")) {
+            CURRENT_SPOTIFY_STATE = PAUSED;
+            return TRUE;
+        }
     }
+    return FALSE;
 }
 
 dbus_bool_t spotify_exited() {
     if (CURRENT_SPOTIFY_STATE != EXITED) {
         // Hide all buttons and track display
-        // Without sleep, requests are sometimes ignored
-        send_ipc_polybar("hook:module/playpause1\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/previous1\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/next1\n");
-        msleep(20);
-        send_ipc_polybar("hook:module/spotify1\n");
-        CURRENT_SPOTIFY_STATE = EXITED;
+        if (send_ipc_polybar(4, "hook:module/playpause1",
+                             "hook:module/previous1", "hook:module/next1",
+                             "hook:module/spotify1")) {
+            CURRENT_SPOTIFY_STATE = EXITED;
+            return TRUE;
+        }
     }
+    return FALSE;
 }
 
-dbus_bool_t send_ipc_polybar(const char *message) {
+dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
     char **paths;
     size_t num_of_paths;
+    va_list args;
+
     // Pass address of pointer to array of strings
     get_polybar_ipc_paths(POLYBAR_IPC_DIRECTORY, &paths, &num_of_paths);
 
-    for (size_t i = 0; i < num_of_paths; i++) {
+    for (size_t p = 0; p < num_of_paths; p++) {
         FILE *fp;
 
-        fp = fopen(paths[i], "w");
+        va_start(args, numOfMsgs);
+        for (int m = 0; m < numOfMsgs; m++) {
+            const char *message = va_arg(args, char *);
 
-        fprintf(fp, "%s", message);
-        printf("%s %s", "Sending the following message to polybar: ", message);
+            fp = fopen(paths[p], "w");
+            fprintf(fp, "%s\n", message);
+            printf("%s%s%s%s%s\n", "Sending the message '", message, "' to '",
+                   paths[p], "'");
 
-        fclose(fp);
-        free(paths[i]);
+            fclose(fp);
+
+            // Without sleep, requests are sometimes ignored
+            msleep(50);
+        }
+        va_end(args);
+
+        free(paths[p]);
     }
+
     free(paths);
 
     return TRUE;
