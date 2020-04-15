@@ -54,6 +54,11 @@ install: spotifyctl spotify-listener
 	@echo "To start spotify-listener right now, run:"
 	@echo "systemd --user start spotify-listener"
 
+uninstall:
+	rm $(addprefix $(BIN_INSTALL_DIR)/,$(_EXES))
+	rm $(LICENSE_INSTALL_PATH)
+	rm $(README_INSTALL_PATH)
+	rm $(SERVICE_INSTALL_PATH)
 
 spotify-listener: $(OBJS) $(ODIR)/spotify-listener.o
 	mkdir -p $(BIN_DIR)
@@ -67,7 +72,7 @@ $(ODIR)/%.o: %.c $(DEPS) $(EXE_DEPS)
 	mkdir -p $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS) $(LIBS_INC)
 
-.PHONY: clean
+.PHONY: clean uninstall
 
 clean:
 	rm -f $(ODIR)/*.o *~ core vgcore.* $(IDIR)/*~ $(BIN_DIR)/*

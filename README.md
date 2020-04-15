@@ -13,6 +13,10 @@ and polybar as well:
 
 To compile the program, you will need `make`.
 
+You most likely already have the above packages installed. Systemd depends on
+DBus, and you wouldn't be looking at this, if you didn't have polybar and
+spotify installed.
+
 
 ## How to Setup
 
@@ -23,6 +27,15 @@ git clone https://github.com/mihirlad55/polybar-spotify-module
 cd polybar-spotify-module/src/
 sudo make install
 ```
+
+#### Arch Linux Users
+`polybar-spotify-module` exists as a package on the AUR! Use your favourite
+AUR helper to install the package.
+```
+yay -S polybar-spotify-module
+```
+The package can be found here
+<https://aur.archlinux.org/packages/polybar-spotify-module/>.
 
 ### Running spotify-listener in the Background
 `spotify-listener` must run in the background for it to be able to listen for
@@ -66,6 +79,8 @@ FontAwesome under the `[bar/<your bar name>]` section:
 [bar/main]
 font-1 = Font Awesome 5 Free:size=10;1
 ```
+Note that the font is specified in modules as a 1-based index, so `font-1` is
+specified by `format-font = 2`.
 
 Next, add the following spotify modules:
 ```
@@ -75,7 +90,7 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; When spotify active
-hook-1 = echo ""
+hook-1 = echo "Previous"
 click-left = "spotifyctl -q previous"
 
 
@@ -85,7 +100,7 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; When spotify active
-hook-1 = echo ""
+hook-1 = echo "Next"
 click-left = "spotifyctl -q next"
 
 
@@ -95,9 +110,9 @@ format-font = 2
 ; Default
 hook-0 = echo ""
 ; Playing
-hook-1 = echo ""
+hook-1 = echo "Pause"
 ; Paused
-hook-2 = echo ""
+hook-2 = echo "Play"
 click-left = "spotifyctl playpause"
 
 
@@ -105,17 +120,18 @@ click-left = "spotifyctl playpause"
 type = custom/ipc
 ; Default
 hook-0 = echo ""
-; Playing/paused show status
+; Playing/paused show song name and artist
 hook-1 = spotifyctl -q status
 ```
+You can replace the text for Pause/Play/Next/Previous with icons for each of
+the hooks.
 
-The squares above are icons that can't be loaded. You can use whatever text or
-symbols you want to substitute.
-
-Lastly, make sure the new spotify modules are part of your bar. Make sure the
-following is part of your modules.
+Lastly, make sure the new spotify modules are part of your bar. Make sure one of
+the following lines is part of your modules.
 ```
 modules-center = spotify previous playpause next
+modules-left = spotify previous playpause next
+modules-right = spotify previous playpause next
 ```
 
 ## How it Works

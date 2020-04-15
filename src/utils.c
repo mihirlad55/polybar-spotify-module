@@ -13,7 +13,7 @@ void print_string_iter(DBusMessageIter *iter) {
     if (type == DBUS_TYPE_STRING) {
         DBusBasicValue value;
         dbus_message_iter_get_basic(iter, &value);
-        printf("%s\n", value.str);
+        puts(value.str);
     }
 }
 
