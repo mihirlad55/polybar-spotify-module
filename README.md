@@ -28,6 +28,15 @@ cd polybar-spotify-module/src/
 sudo make install
 ```
 
+#### Arch Linux Users
+`polybar-spotify-module` exists as a package on the AUR! Use your favourite
+AUR helper to install the package.
+```
+yay -S polybar-spotify-module
+```
+The package can be found here
+<https://aur.archlinux.org/packages/polybar-spotify-module/>.
+
 ### Running spotify-listener in the Background
 `spotify-listener` must run in the background for it to be able to listen for
 track changes and communicate with polybar. There are two ways to keep it
