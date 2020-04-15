@@ -11,7 +11,7 @@ DBus is used for listening to spotify track changes. Obviously you need spotify
 and polybar as well:
 `dbus polybar spotify`
 
-To compile the program, you will need `gcc`.
+To compile the program, you will need `make`.
 
 
 ## How to Setup
