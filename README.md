@@ -1,5 +1,7 @@
 # Polybar Spotify Module
 
+![polybar-spotify-module](https://github.com/mihirlad55/polybar-spotify-module/raw/master/screenshots/capture.png)
+
 This is a pure C implementation of an external polybar module that signals
 polybar when a track is playing/paused and when the track changes. There is
 also a program that retreives the title and artist of the currently playing
