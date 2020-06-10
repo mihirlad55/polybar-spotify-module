@@ -278,11 +278,11 @@ char *str_replace_all(char *str, char *find, char *repl) {
     return new_str;
 }
 
-dbus_bool_t str_trunc(char *str, const int max_len, char *trunc) {
+char* str_trunc(char *str, const int max_len, char *trunc) {
     size_t len = strlen(str);
     size_t trunc_len = strlen(trunc);
 
-    if (trunc_len > max_len) return FALSE;
+    if (trunc_len > max_len) return NULL;
 
     if (len > max_len) {
         // New size is max_len + null char
@@ -290,10 +290,9 @@ dbus_bool_t str_trunc(char *str, const int max_len, char *trunc) {
 
         // Replace the ending of str with trunc leaving room for a null char
         strcpy(str + max_len - trunc_len, trunc);
-        str[str_size - 1] = '\0';
 
         str = (char *)realloc(str, str_size);
     }
 
-    return TRUE;
+    return str;
 }

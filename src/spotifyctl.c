@@ -75,15 +75,33 @@ char *format_output(char *artist, char *title, int max_artist_length,
                     int max_title_length, int max_length, char *format,
                     char *trunc) {
     // Truncate artist and track title using the truncation string
-    str_trunc(title, max_title_length, trunc);
-    str_trunc(artist, max_artist_length, trunc);
+    if (!(title = str_trunc(title, max_title_length, trunc))) {
+        if (!SUPPRESS_ERRORS) {
+            fputs(
+                "Failed to truncate title. Please make sure the trunc string "
+                "is smaller "
+                "than the max title length.\n",
+                stderr);
+            exit(1);
+        }
+    }
+    if (!(artist = str_trunc(artist, max_artist_length, trunc))) {
+        if (!SUPPRESS_ERRORS) {
+            fputs(
+                "Failed to truncate artist. Please make sure the trunc string "
+                "is smaller "
+                "than the max title length.\n",
+                stderr);
+        }
+        exit(1);
+    }
 
     // Replace all tokens with their values
     char *temp = str_replace_all(format, "%artist%", artist);
     char *output = str_replace_all(temp, "%title%", title);
 
     // Truncate output to max length
-    str_trunc(output, max_length, "");
+    output = str_trunc(output, max_length, "");
 
     // Allocate extra character to add newline
     const size_t OUTPUT_SIZE = (strlen(output) + 1) * sizeof(char);
@@ -92,6 +110,8 @@ char *format_output(char *artist, char *title, int max_artist_length,
     strcat(output, "\n");
 
     free(temp);
+    free(title);
+    free(artist);
 
     return output;
 }
@@ -127,8 +147,6 @@ void get_status(DBusConnection *connection, int max_artist_length,
 
     printf("%s", output);
 
-    free(title);
-    free(artist);
     free(output);
 
     dbus_message_unref(reply);

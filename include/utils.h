@@ -34,6 +34,6 @@ char *join_path(const char *p1, const char *p2);
 
 char* str_replace_all(char *str, char *find, char *repl);
 
-dbus_bool_t str_trunc(char *str, const int max_len, char *trunc);
+char* str_trunc(char *str, const int max_len, char *trunc);
 
 #endif
