@@ -151,9 +151,47 @@ void spotify_player_call(DBusConnection *connection, const char *method) {
 }
 
 void print_usage() {
-    puts(
-        "usage: spotifyctl [ -q ] status | play | pause | playpause | next | "
-        "previous");
+    puts("usage: spotifyctl [ -q ] [options] <command>");
+    puts("");
+    puts("  Commands:");
+    puts("    play           Play spotify");
+    puts("    pause          Pause spotify");
+    puts("    playpause      Toggle the play/pause state on spotify");
+    puts("    next           Go to the next track on spotify");
+    puts("    previous       Go to the previous track on spotify");
+    puts("    status         Print the status of spotify including the track");
+    puts("                   title and artist name.");
+    puts("");
+    puts("  Options:");
+    puts("    --max-artist-length       The maximum length of the artist name");
+    puts("                              to show");
+    puts("                                Default: 10");
+    puts("    --max-title-length        The maximum length of the track title");
+    puts("                              to show");
+    puts("                                Default: 15");
+    puts("    --max-length              The maximum length of the output of");
+    puts("                              the status command");
+    puts("    --max-length                Default: 30");
+    puts("    --format                  The format to display the status in.");
+    puts("                              The %artist% and %title% tokens will");
+    puts("                              be replaced by the artist name and");
+    puts("                                Default: '%artist%: %title%'");
+    puts("                              track title, respectively.");
+    puts("    --trunc                   The string to use to show that the");
+    puts("                              artist name or track title were");
+    puts("                              longer than the max length specified.");
+    puts("                              This will count towards the max");
+    puts("                              lengths. This can be blank.");
+    puts("                                Default: '...'");
+    puts("    -q                        Hide errors");
+    puts("");
+    puts("  Examples:");
+    puts("    spotifyctl status --format '%artist%: %title%' \\");
+    puts("        --max-length 30 --max-artist-length 10 \\");
+    puts("        --max-title-length 20 --trunc '...'");
+    puts("    If artist name is 'Eminem' and track title is");
+    puts("    'Sing for the Moment', the output will be:");
+    puts("    Eminem: Sing for the...");
 }
 
 int main(int argc, char *argv[]) {
