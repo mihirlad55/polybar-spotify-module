@@ -103,11 +103,12 @@ char *format_output(char *artist, char *title, int max_artist_length,
     // Truncate output to max length
     output = str_trunc(output, max_length, "");
 
-    // Allocate extra character to add newline
-    const size_t OUTPUT_SIZE = (strlen(output) + 1) * sizeof(char);
+    // Allocate extra character to add newline +1 null char
+    const size_t OUTPUT_SIZE = (strlen(output) + 2) * sizeof(char);
     output = (char *)realloc(output, OUTPUT_SIZE);
 
-    strcat(output, "\n");
+    // End with \n\0
+    strcpy(output + OUTPUT_SIZE - 2, "\n");
 
     free(temp);
     free(title);
