@@ -220,3 +220,60 @@ dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[],
     return TRUE;
 }
 
+char *str_replace_all(char *str, char *find, char *repl) {
+    // Pointer to substring of str
+    char *substr = str;
+
+    // # of characters that need to be allocated per replacement
+    const int REPL_DIFF = strlen(repl) - strlen(find);
+
+    // Number of additional replacmements to allocate memory for at a time
+    const int REALLOC_RATE = 1;
+
+    // Allocate memory for final string assuming only 1 replacement will be
+    // made (REALLOC_RATE=1). For most use-cases, only 1 replacement will be
+    // made. This is an optimization for its main use case. Also add 1 for null
+    // character.
+    int new_str_size = strlen(str) + REPL_DIFF * REALLOC_RATE + 1;
+    char *new_str = (char *)calloc(new_str_size, sizeof(char));
+
+    int num_of_replacements = 0;
+
+    char *match;
+    size_t actual_len = 0;
+
+    // For every match
+    while (match = strstr(substr, find)) {
+        // Get offset of first match
+        size_t offset = match - substr;
+
+        // Length of new_str is offset match + length of replacement
+        actual_len += offset + strlen(repl);
+
+        // Reallocate memory every REALLOC_RATE replacements. At 0 replacements,
+        // memory has already been allocated fo REALLOC_RATE replacements.
+        if (num_of_replacements != 0 &&
+            num_of_replacements % REALLOC_RATE == 0) {
+            // Allocate memory for REALLOC_RATE more replacements
+            new_str_size += REPL_DIFF * REALLOC_RATE * sizeof(char);
+            new_str = (char *)realloc(new_str, new_str_size);
+        }
+
+        strncat(new_str, substr, offset);
+        strcat(new_str, repl);
+
+        // Shift substr pointer to character after match
+        substr += offset + strlen(find);
+
+        num_of_replacements++;
+    }
+
+    // Concatenate rest of substr
+    strcat(new_str, substr);
+    actual_len += strlen(substr);
+
+    // Release any extra memory allocated
+    new_str = (char *)realloc(new_str, (actual_len + 1) * sizeof(char));
+
+    return new_str;
+}
