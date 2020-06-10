@@ -234,7 +234,7 @@ char *str_replace_all(char *str, char *find, char *repl) {
     // made (REALLOC_RATE=1). For most use-cases, only 1 replacement will be
     // made. This is an optimization for its main use case. Also add 1 for null
     // character.
-    int new_str_size = strlen(str) + REPL_DIFF * REALLOC_RATE + 1;
+    size_t new_str_size = strlen(str) + REPL_DIFF * REALLOC_RATE + 1;
     char *new_str = (char *)calloc(new_str_size, sizeof(char));
 
     int num_of_replacements = 0;
@@ -268,12 +268,17 @@ char *str_replace_all(char *str, char *find, char *repl) {
         num_of_replacements++;
     }
 
-    // Concatenate rest of substr
-    strcat(new_str, substr);
+    // Calculate final length after appending substr
     actual_len += strlen(substr);
 
-    // Release any extra memory allocated
+    // Allocate exact amount of memory needed. This will release extra memory or
+    // allocate more memory if no replacements were made and REPL_DIFF < 0 in
+    // which case there would not be enough memory to concat substr.
     new_str = (char *)realloc(new_str, (actual_len + 1) * sizeof(char));
+
+    // Concatenate rest of substr. This must happen after reallocation in case
+    // REPL_DIFF < 0 and no replacements were made.
+    strcat(new_str, substr);
 
     return new_str;
 }
