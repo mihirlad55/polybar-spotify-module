@@ -283,21 +283,30 @@ char *str_replace_all(char *str, char *find, char *repl) {
     return new_str;
 }
 
-char* str_trunc(char *str, const int max_len, char *trunc) {
+char *str_trunc(char *str, const int max_len, char *trunc) {
     size_t len = strlen(str);
     size_t trunc_len = strlen(trunc);
+    char *new_str;
 
     if (trunc_len > max_len) return NULL;
 
     if (len > max_len) {
         // New size is max_len + null char
-        size_t str_size = (max_len + 1) * sizeof(char);
+        size_t new_str_size = max_len + 1; ;
 
-        // Replace the ending of str with trunc leaving room for a null char
-        strcpy(str + max_len - trunc_len, trunc);
+        new_str = (char *)calloc(new_str_size, sizeof(char));
 
-        str = (char *)realloc(str, str_size);
+        // Copy str, leaving room for trunc
+        strncpy(new_str, str, max_len - trunc_len);
+        strcat(new_str, trunc);
+    } else {
+        // +1 for null char
+        size_t new_str_size = len + 1; ;
+
+        new_str = (char *)calloc(new_str_size, sizeof(char));
+
+        strcpy(new_str, str);
     }
 
-    return str;
+    return new_str;
 }
