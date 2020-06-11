@@ -220,3 +220,111 @@ dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[],
     return TRUE;
 }
 
+char *str_replace_all(char *str, char *find, char *repl) {
+    // Pointer to substring of str
+    char *substr = str;
+
+    // # of characters that need to be allocated per replacement
+    const int REPL_DIFF = strlen(repl) - strlen(find);
+
+    // Number of additional replacmements to allocate memory for at a time
+    const int REALLOC_RATE = 1;
+
+    // Allocate memory for final string assuming only 1 replacement will be
+    // made (REALLOC_RATE=1). For most use-cases, only 1 replacement will be
+    // made. This is an optimization for its main use case. Also add 1 for null
+    // character.
+    size_t new_str_size = strlen(str) + REPL_DIFF * REALLOC_RATE + 1;
+    char *new_str = (char *)calloc(new_str_size, sizeof(char));
+
+    int num_of_replacements = 0;
+
+    char *match;
+    size_t actual_len = 0;
+
+    // For every match
+    while (match = strstr(substr, find)) {
+        // Get offset of first match
+        size_t offset = match - substr;
+
+        // Length of new_str is offset match + length of replacement
+        actual_len += offset + strlen(repl);
+
+        // Reallocate memory every REALLOC_RATE replacements. At 0 replacements,
+        // memory has already been allocated fo REALLOC_RATE replacements.
+        if (num_of_replacements != 0 &&
+            num_of_replacements % REALLOC_RATE == 0) {
+            // Allocate memory for REALLOC_RATE more replacements
+            new_str_size += REPL_DIFF * REALLOC_RATE * sizeof(char);
+            new_str = (char *)realloc(new_str, new_str_size);
+        }
+
+        strncat(new_str, substr, offset);
+        strcat(new_str, repl);
+
+        // Shift substr pointer to character after match
+        substr += offset + strlen(find);
+
+        num_of_replacements++;
+    }
+
+    // Calculate final length after appending substr
+    actual_len += strlen(substr);
+
+    // Allocate exact amount of memory needed. This will release extra memory or
+    // allocate more memory if no replacements were made and REPL_DIFF < 0 in
+    // which case there would not be enough memory to concat substr.
+    new_str = (char *)realloc(new_str, (actual_len + 1) * sizeof(char));
+
+    // Concatenate rest of substr. This must happen after reallocation in case
+    // REPL_DIFF < 0 and no replacements were made.
+    strcat(new_str, substr);
+
+    return new_str;
+}
+
+char *str_trunc(char *str, const int max_len, char *trunc) {
+    size_t len = strlen(str);
+    size_t trunc_len = strlen(trunc);
+    char *new_str;
+
+    if (trunc_len > max_len) return NULL;
+
+    if (len > max_len) {
+        // New size is max_len + null char
+        size_t new_str_size = max_len + 1; ;
+
+        new_str = (char *)calloc(new_str_size, sizeof(char));
+
+        // Copy str, leaving room for trunc
+        strncpy(new_str, str, max_len - trunc_len);
+        strcat(new_str, trunc);
+    } else {
+        // +1 for null char
+        size_t new_str_size = len + 1; ;
+
+        new_str = (char *)calloc(new_str_size, sizeof(char));
+
+        strcpy(new_str, str);
+    }
+
+    return new_str;
+}
+
+int num_of_matches(char *str, char *find) {
+    char *substr = str;
+    char *match;
+    int num_of_matches = 0;
+
+    while (match = strstr(substr, find)) {
+        num_of_matches++;
+
+        // Get offset of first match
+        size_t offset = match - substr;
+
+        // Shift substr pointer to character after match
+        substr += offset + strlen(find);
+    }
+
+    return num_of_matches;
+}

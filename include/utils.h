@@ -32,4 +32,10 @@ dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[],
 
 char *join_path(const char *p1, const char *p2);
 
+char* str_replace_all(char *str, char *find, char *repl);
+
+char* str_trunc(char *str, const int max_len, char *trunc);
+
+int num_of_matches(char *str, char *find);
+
 #endif
