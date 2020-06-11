@@ -35,18 +35,19 @@ const char *NAME_OWNER_CHANGED_MATCH =
 
 
 dbus_bool_t update_last_trackid(const char *trackid) {
-    // +1 for null char
-    size_t size = strlen(trackid) + 1;
+    if (trackid != NULL) {
+        // +1 for null char
+        size_t size = strlen(trackid) + 1;
 
-    last_trackid = (char *)realloc(last_trackid, size);
-    last_trackid[0] = '\0';
+        last_trackid = (char *)realloc(last_trackid, size);
+        last_trackid[0] = '\0';
 
-    strcpy(last_trackid, trackid);
+        strcpy(last_trackid, trackid);
 
-    if (last_trackid != NULL)
         return TRUE;
-    else
+    } else {
         return FALSE;
+    }
 }
 
 dbus_bool_t spotify_update_track(const char *current_trackid) {
