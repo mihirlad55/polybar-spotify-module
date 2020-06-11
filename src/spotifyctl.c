@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "../include/utils.h"
 
@@ -74,45 +75,73 @@ char *get_song_artist_from_metadata(DBusMessage *msg) {
 char *format_output(char *artist, char *title, int max_artist_length,
                     int max_title_length, int max_length, char *format,
                     char *trunc) {
-    // Truncate artist and track title using the truncation string
-    if (!(trunc_title = str_trunc(title, max_title_length, trunc))) {
-        if (!SUPPRESS_ERRORS) {
-            fputs(
-                "Failed to truncate title. Please make sure the trunc string "
-                "is smaller "
-                "than the max title length.\n",
-                stderr);
+    // Get total number of each token
+    const int NUM_OF_ARTIST_TOK = num_of_matches(format, "%artist%");
+    const int NUM_OF_TITLE_TOK = num_of_matches(format, "%title%");
+
+    // Get length difference caused by a single replacement
+    const int ARTIST_REPL_DIFF = strlen(artist) - strlen("%artist%");
+    const int TITLE_REPL_DIFF = strlen(title) - strlen("%title%");
+
+    // Calculate the total untruncated length of the output
+    const int TOTAL_UNTRUNC_LENGTH = strlen(format) +
+                                     NUM_OF_ARTIST_TOK * ARTIST_REPL_DIFF +
+                                     NUM_OF_TITLE_TOK * TITLE_REPL_DIFF;
+
+    char *output;
+
+    // Truncate artist and title only if total untruncated length > max_length
+    // and max_length was specified
+    if (max_length == INT_MAX || TOTAL_UNTRUNC_LENGTH > max_length) {
+        char *trunc_title;
+        char *trunc_artist;
+
+        // Truncate artist and track title using the truncation string
+        if (!(trunc_title = str_trunc(title, max_title_length, trunc))) {
+            if (!SUPPRESS_ERRORS) {
+                fputs(
+                    "Failed to truncate title. Please make sure the trunc "
+                    "string is smaller than the max title length.\n",
+                    stderr);
+                exit(1);
+            }
+        }
+
+        if (!(trunc_artist = str_trunc(artist, max_artist_length, trunc))) {
+            if (!SUPPRESS_ERRORS) {
+                fputs(
+                    "Failed to truncate artist. Please make sure the trunc "
+                    "string is smaller than the max title length.\n",
+                    stderr);
+            }
             exit(1);
         }
+
+        // Replace all tokens with their values
+        char *temp = str_replace_all(format, "%artist%", trunc_artist);
+        char *temp2 = str_replace_all(temp, "%title%", trunc_title);
+
+        // Truncate output to max length
+        output = str_trunc(temp2, max_length, trunc);
+
+        free(temp);
+        free(temp2);
+        free(trunc_title);
+        free(trunc_artist);
+    } else {
+        // Replace all tokens with their values
+        char *temp = str_replace_all(format, "%artist%", artist);
+        output = str_replace_all(temp, "%title%", title);
+
+        free(temp);
     }
-    if (!(trunc_artist = str_trunc(artist, max_artist_length, trunc))) {
-        if (!SUPPRESS_ERRORS) {
-            fputs(
-                "Failed to truncate artist. Please make sure the trunc string "
-                "is smaller "
-                "than the max title length.\n",
-                stderr);
-        }
-        exit(1);
-    }
 
-    // Replace all tokens with their values
-    char *temp = str_replace_all(format, "%artist%", trunc_artist);
-    char *output = str_replace_all(temp, "%title%", trunc_title);
-
-    // Truncate output to max length
-    output = str_trunc(output, max_length, "");
-
-    // Allocate extra character to add newline +1 null char
+    // Allocate extra character to add newline + null char
     const size_t OUTPUT_SIZE = (strlen(output) + 2) * sizeof(char);
     output = (char *)realloc(output, OUTPUT_SIZE);
 
     // End with \n\0
     strcpy(output + OUTPUT_SIZE - 2, "\n");
-
-    free(temp);
-    free(trunc_title);
-    free(trunc_artist);
 
     return output;
 }
@@ -185,24 +214,33 @@ void print_usage() {
     puts("");
     puts("  Options:");
     puts("    --max-artist-length       The maximum length of the artist name");
-    puts("                              to show");
-    puts("                                Default: 10");
+    puts("                              to show. If max-length is specified,");
+    puts("                              This will only restrict the length if");
+    puts("                              the output length is longer than");
+    puts("                              max-length");
+    puts("                                Default: No limit");
     puts("    --max-title-length        The maximum length of the track title");
-    puts("                              to show");
-    puts("                                Default: 15");
+    puts("                              to show. If max-length is specified,");
+    puts("                              This will only restrict the length if");
+    puts("                              the output length is longer than");
+    puts("                              max-length");
+    puts("                                Default: No limit");
     puts("    --max-length              The maximum length of the output of");
-    puts("                              the status command");
-    puts("    --max-length                Default: 30");
+    puts("                              the status command. This value works");
+    puts("                              best as the sum of the max artist and");
+    puts("                              max title length if those are");
+    puts("                              specified.");
+    puts("                              Default: No limit");
     puts("    --format                  The format to display the status in.");
     puts("                              The %artist% and %title% tokens will");
     puts("                              be replaced by the artist name and");
     puts("                                Default: '%artist%: %title%'");
     puts("                              track title, respectively.");
     puts("    --trunc                   The string to use to show that the");
-    puts("                              artist name or track title were");
-    puts("                              longer than the max length specified.");
-    puts("                              This will count towards the max");
-    puts("                              lengths. This can be blank.");
+    puts("                              artist name, track title, or output");
+    puts("                              was longer than the max length");
+    puts("                              specified. This will count towards");
+    puts("                              the max lengths. This can be blank.");
     puts("                                Default: '...'");
     puts("    -q                        Hide errors");
     puts("");
@@ -211,8 +249,24 @@ void print_usage() {
     puts("        --max-length 30 --max-artist-length 10 \\");
     puts("        --max-title-length 20 --trunc '...'");
     puts("    If artist name is 'Eminem' and track title is");
-    puts("    'Sing for the Moment', the output will be:");
-    puts("    Eminem: Sing for the...");
+    puts("    'Sing For The Moment', the output will be:");
+    puts("    Eminem: Sing For The Moment");
+    puts("    since the total length is less than 30 characters.");
+    puts("");
+    puts("    spotifyctl status --format '%artist%: %title%' \\");
+    puts("        --max-length 20 --max-artist-length 10 \\");
+    puts("        --max-title-length 10 --trunc '...'");
+    puts("    If artist name is 'Eminem' and track title is");
+    puts("    'Sing For The Moment', the output will be:");
+    puts("    Eminem: Sing Fo...");
+    puts("    since the total length is less than 30 characters.");
+    puts("");
+    puts("    spotifyctl status --format '%artist%: %title%' \\");
+    puts("        --max-title-length 13 --trunc '...'");
+    puts("    If artist name is 'Eminem' and track title is");
+    puts("    'Sing For The Moment', the output will be:");
+    puts("    Eminem: Sing For T...");
+    puts("    since the total length is less than 30 characters.");
 }
 
 int main(int argc, char *argv[]) {
@@ -220,9 +274,9 @@ int main(int argc, char *argv[]) {
     DBusError err;
     ProgMode prog_mode = MODE_NONE;
 
-    int max_artist_length = 10;
-    int max_title_length = 15;
-    int max_length = 30;
+    int max_artist_length = INT_MAX;
+    int max_title_length = INT_MAX;
+    int max_length = INT_MAX;
     char *status_format = "%artist%: %title%";
     char *trunc = "...";
 
