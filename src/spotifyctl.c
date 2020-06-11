@@ -285,23 +285,20 @@ int main(int argc, char *argv[]) {
             SUPPRESS_ERRORS = 1;
         } else if (strcmp(argv[i], "--max-artist-length") == 0) {
             max_artist_length = atoi(argv[++i]);
-            if (max_artist_length == 0) {
+            if (max_artist_length <= 0) {
                 fputs("Artist length must be a positive integer!\n", stderr);
-                print_usage();
                 return 1;
             }
         } else if (strcmp(argv[i], "--max-title-length") == 0) {
             max_title_length = atoi(argv[++i]);
-            if (max_title_length == 0) {
+            if (max_title_length <= 0) {
                 fputs("Title length must be a positive integer!\n", stderr);
-                print_usage();
                 return 1;
             }
         } else if (strcmp(argv[i], "--max-length") == 0) {
             max_length = atoi(argv[++i]);
-            if (max_length == 0) {
+            if (max_length <= 0) {
                 fputs("Max length must be a positive integer!\n", stderr);
-                print_usage();
                 return 1;
             }
         } else if (strcmp(argv[i], "--format") == 0) {
