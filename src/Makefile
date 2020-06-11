@@ -30,7 +30,7 @@ LICENSE_FILE = ../LICENSE
 README_FILE = ../README.md
 SERVICE_FILE_NAME = spotify-listener.service
 
-BIN_INSTALL_DIR = /usr/local/bin
+BIN_INSTALL_DIR = /usr/bin
 LICENSE_INSTALL_PATH = /usr/share/licenses/$(PKG_NAME)/LICENSE
 README_INSTALL_PATH = /usr/share/doc/$(PKG_NAME)/README.md
 SERVICE_INSTALL_PATH = /usr/lib/systemd/user/spotify-listener.service

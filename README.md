@@ -1,5 +1,7 @@
 # Polybar Spotify Module
 
+![polybar-spotify-module](https://github.com/mihirlad55/polybar-spotify-module/raw/master/screenshots/capture.png)
+
 This is a pure C implementation of an external polybar module that signals
 polybar when a track is playing/paused and when the track changes. There is
 also a program that retreives the title and artist of the currently playing
@@ -121,7 +123,7 @@ type = custom/ipc
 ; Default
 hook-0 = echo ""
 ; Playing/paused show song name and artist
-hook-1 = spotifyctl -q status
+hook-1 = spotifyctl -q status --format '%artist%: %title%'
 ```
 You can replace the text for Pause/Play/Next/Previous with icons for each of
 the hooks.
@@ -133,6 +135,34 @@ modules-center = spotify previous playpause next
 modules-left = spotify previous playpause next
 modules-right = spotify previous playpause next
 ```
+
+## Status Formatting
+The `spotifyctl status` command has multiple formatting options. You can
+specify the:
+- Maximum output length
+- Maximum artist length
+- Maxiumum track title length
+- Output Format
+- Truncation string
+
+By default, the above lengths are `INT_MAX` (no limit). Additionally, if max
+length is specified, the artist and track title will not be truncated if
+the untruncated output satisfies the output max length constraint.
+
+The tokens `%artist%` and `%title%` can be used to specify the output format.
+
+For example for the artist `Eminem` and track title `Sing For The Moment`
+```
+spotifyctl status --format '%artist%: %title%' --max-length 20 \
+    --max-title-length 10 --max-artist-length 10 --trunc '...'
+```
+would result in the following output
+```
+Eminem: Sing Fo...
+```
+
+For more information and examples, you can run the command `spotifyctl help`.
+
 
 ## How it Works
 The spotify-listener program connects to the DBus Session Bus and listens for
