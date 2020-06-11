@@ -310,3 +310,21 @@ char *str_trunc(char *str, const int max_len, char *trunc) {
 
     return new_str;
 }
+
+int num_of_matches(char *str, char *find) {
+    char *substr = str;
+    char *match;
+    int num_of_matches = 0;
+
+    while (match = strstr(substr, find)) {
+        num_of_matches++;
+
+        // Get offset of first match
+        size_t offset = match - substr;
+
+        // Shift substr pointer to character after match
+        substr += offset + strlen(find);
+    }
+
+    return num_of_matches;
+}

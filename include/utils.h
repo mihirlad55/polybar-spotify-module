@@ -36,4 +36,6 @@ char* str_replace_all(char *str, char *find, char *repl);
 
 char* str_trunc(char *str, const int max_len, char *trunc);
 
+int num_of_matches(char *str, char *find);
+
 #endif
