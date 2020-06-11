@@ -136,13 +136,6 @@ char *format_output(char *artist, char *title, int max_artist_length,
         free(temp);
     }
 
-    // Allocate extra character to add newline + null char
-    const size_t OUTPUT_SIZE = (strlen(output) + 2) * sizeof(char);
-    output = (char *)realloc(output, OUTPUT_SIZE);
-
-    // End with \n\0
-    strcpy(output + OUTPUT_SIZE - 2, "\n");
-
     return output;
 }
 
@@ -175,7 +168,7 @@ void get_status(DBusConnection *connection, int max_artist_length,
     char *output = format_output(artist, title, max_artist_length,
                                  max_title_length, max_length, format, trunc);
 
-    printf("%s", output);
+    puts(output);
 
     free(output);
     free(title);
