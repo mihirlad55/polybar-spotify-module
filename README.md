@@ -1,6 +1,6 @@
 # Polybar Spotify Module
 
-![polybar-spotify-module](https://github.com/mihirlad55/polybar-spotify-module/raw/master/screenshots/capture.png)
+![polybar-spotify-module](https://github.com/mihirlad55/polybar-spotify-module/raw/master/screenshots/capture2.png)
 
 This is a pure C implementation of an external polybar module that signals
 polybar when a track is playing/paused and when the track changes. There is
