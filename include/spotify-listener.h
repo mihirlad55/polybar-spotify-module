@@ -27,7 +27,7 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...);
  * DBUS_HANDLER_RESULT_HANDLED if it was a signal from spotify contianing the
  * desired information, otherwise returns DBUS_HANDLER_RESULT_NOT_YET_HANDLED.
  */
-DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
+DBusHandlerResult properties_changed_handler(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data);
 

@@ -136,10 +136,10 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
     return TRUE;
 }
 
-DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
+DBusHandlerResult properties_changed_handler(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data) {
-    if (VERBOSE) puts("Running handle_media_player_signal");
+    if (VERBOSE) puts("Running properties_changed_handler");
     DBusMessageIter iter;
     DBusMessageIter sub_iter;
     dbus_bool_t is_spotify = FALSE;
@@ -305,7 +305,7 @@ int main() {
     }
 
     // Register handler for PropertiesChanged signal
-    if (!dbus_connection_add_filter(connection, handle_media_player_signal,
+    if (!dbus_connection_add_filter(connection, properties_changed_handler,
                                     NULL, free_user_data)) {
         fputs("Failed to add properties changed handler", stderr);
         return 1;
