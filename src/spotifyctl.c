@@ -1,12 +1,13 @@
 #include "../include/spotifyctl.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
 #include "../include/utils.h"
 
+/*************** Constants for DBus ***************/
 const char *DESTINATION = "org.mpris.MediaPlayer2.spotify";
 const char *PATH = "/org/mpris/MediaPlayer2";
 
@@ -25,6 +26,7 @@ const char *PLAYER_METHOD_PREVIOUS = "Previous";
 const char *METADATA_TITLE_KEY = "xesam:title";
 const char *METADATA_ARTIST_KEY = "xesam:artist";
 
+/*** Program Mode ***/
 typedef enum {
     MODE_NONE,
     MODE_STATUS,
@@ -35,6 +37,8 @@ typedef enum {
     MODE_PLAYPAUSE
 } ProgMode;
 
+// Predictable errors will be hidden if this is TRUE such as if spotify is not
+// running and the status is requested
 dbus_bool_t SUPPRESS_ERRORS = 0;
 
 char *get_song_title_from_metadata(DBusMessage *msg) {
@@ -43,6 +47,25 @@ char *get_song_title_from_metadata(DBusMessage *msg) {
     dbus_message_iter_init(msg, &iter);
 
     char *title = NULL;
+
+    // The message looks like this:
+    // string "org.mpris.MediaPlayer2.Player"
+    // array [
+    //    dict entry(
+    //       string "Metadata"
+    //       variant             array [
+    //          .
+    //          .
+    //          .
+    //             dict entry(
+    //                string "xesam:title"
+    //                variant               string "{track title}"
+    //             )
+    //       ]
+    //    )
+    // ]
+    // The track title is at the path:
+    // variant->array[xesam:title]->variant->string
 
     if (iter_try_step_into_type(&iter, DBUS_TYPE_VARIANT) &&
         iter_try_step_into_type(&iter, DBUS_TYPE_ARRAY) &&
@@ -61,6 +84,25 @@ char *get_song_artist_from_metadata(DBusMessage *msg) {
 
     char *artist = NULL;
 
+    // The message looks like this:
+    // string "org.mpris.MediaPlayer2.Player"
+    // array [
+    //    dict entry(
+    //       string "Metadata"
+    //       variant             array [
+    //          .
+    //          .
+    //          .
+    //             dict entry(
+    //                string "xesam:artist"
+    //                variant               string "{track artist}"
+    //             )
+    //       ]
+    //    )
+    // ]
+    // The track title is at the path:
+    // variant->array[xesam:artist]->variant->string
+
     if (iter_try_step_into_type(&iter, DBUS_TYPE_VARIANT) &&
         iter_try_step_into_type(&iter, DBUS_TYPE_ARRAY) &&
         iter_try_step_to_key(&iter, METADATA_ARTIST_KEY) &&
@@ -72,9 +114,10 @@ char *get_song_artist_from_metadata(DBusMessage *msg) {
     return artist;
 }
 
-char *format_output(char *artist, char *title, int max_artist_length,
-                    int max_title_length, int max_length, char *format,
-                    char *trunc) {
+char *format_output(const char *artist, const char *title,
+                    const int max_artist_length, const int max_title_length,
+                    const int max_length, const char *format,
+                    const char *trunc) {
     // Get total number of each token
     const int NUM_OF_ARTIST_TOK = num_of_matches(format, "%artist%");
     const int NUM_OF_TITLE_TOK = num_of_matches(format, "%title%");
@@ -111,7 +154,7 @@ char *format_output(char *artist, char *title, int max_artist_length,
             if (!SUPPRESS_ERRORS) {
                 fputs(
                     "Failed to truncate artist. Please make sure the trunc "
-                    "string is smaller than the max title length.\n",
+                    "string is smaller than the max artist length.\n",
                     stderr);
             }
             exit(1);
@@ -122,7 +165,15 @@ char *format_output(char *artist, char *title, int max_artist_length,
         char *temp2 = str_replace_all(temp, "%title%", trunc_title);
 
         // Truncate output to max length
-        output = str_trunc(temp2, max_length, trunc);
+        if (!(output = str_trunc(temp2, max_length, trunc))) {
+            if (!SUPPRESS_ERRORS) {
+                fputs(
+                    "Failed to truncate output. Please make sure the trunc "
+                    "string is smaller than the max output length.\n",
+                    stderr);
+            }
+            exit(1);
+        }
 
         free(temp);
         free(temp2);
@@ -136,29 +187,27 @@ char *format_output(char *artist, char *title, int max_artist_length,
         free(temp);
     }
 
-    // Allocate extra character to add newline + null char
-    const size_t OUTPUT_SIZE = (strlen(output) + 2) * sizeof(char);
-    output = (char *)realloc(output, OUTPUT_SIZE);
-
-    // End with \n\0
-    strcpy(output + OUTPUT_SIZE - 2, "\n");
-
     return output;
 }
 
-void get_status(DBusConnection *connection, int max_artist_length,
-                int max_title_length, int max_length, char *format,
-                char *trunc) {
+void get_status(DBusConnection *connection, const int max_artist_length,
+                const int max_title_length, const int max_length,
+                const char *format, const char *trunc) {
     DBusError err;
     dbus_error_init(&err);
 
+    // Send a message requesting the properties
     DBusMessage *msg = dbus_message_new_method_call(
         DESTINATION, PATH, STATUS_IFACE, STATUS_METHOD);
 
+    // Message looks like this:
+    // string "org.mpris.MediaPlayer2.Player"
+    // string "Metadata"
     dbus_message_append_args(
         msg, DBUS_TYPE_STRING, &STATUS_METHOD_ARG_IFACE_NAME, DBUS_TYPE_STRING,
         &STATUS_METHOD_ARG_PROPERTY_NAME, DBUS_TYPE_INVALID);
 
+    // Send and receive reply
     DBusMessage *reply;
     reply =
         dbus_connection_send_with_reply_and_block(connection, msg, 10000, &err);
@@ -175,7 +224,7 @@ void get_status(DBusConnection *connection, int max_artist_length,
     char *output = format_output(artist, title, max_artist_length,
                                  max_title_length, max_length, format, trunc);
 
-    printf("%s", output);
+    puts(output);
 
     free(output);
     free(title);
@@ -188,6 +237,7 @@ void spotify_player_call(DBusConnection *connection, const char *method) {
     DBusError err;
     dbus_error_init(&err);
 
+    // Call a org.mpris.MediaPlayer2.Player method
     DBusMessage *msg =
         dbus_message_new_method_call(DESTINATION, PATH, PLAYER_IFACE, method);
 
@@ -272,14 +322,16 @@ void print_usage() {
 int main(int argc, char *argv[]) {
     DBusConnection *connection;
     DBusError err;
-    ProgMode prog_mode = MODE_NONE;
 
+    // Default options
+    ProgMode prog_mode = MODE_NONE;
     int max_artist_length = INT_MAX;
     int max_title_length = INT_MAX;
     int max_length = INT_MAX;
     char *status_format = "%artist%: %title%";
     char *trunc = "...";
 
+    // Parse commandline options
     for (size_t i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-q") == 0) {
             SUPPRESS_ERRORS = 1;
@@ -336,6 +388,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Call function based on command supplied
     switch (prog_mode) {
         case MODE_NONE:
             fputs("No command specified\n", stderr);

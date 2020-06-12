@@ -18,27 +18,40 @@ const dbus_bool_t VERBOSE = FALSE;
 
 const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 
+// Used to check if track has changed
 char *last_trackid = NULL;
 
-typedef enum { PLAYING, PAUSED, EXITED } spotify_state;
+// Current state of spotify
+typedef enum { PLAYING, PAUSED, EXITED } SpotifyState;
+SpotifyState CURRENT_SPOTIFY_STATE = EXITED;
 
-spotify_state CURRENT_SPOTIFY_STATE = EXITED;
+// DBus signals to listen for
+const char *PROPERTIES_CHANGED_MATCH =
+    "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',"
+    "path='/org/mpris/MediaPlayer2'";
+const char *NAME_OWNER_CHANGED_MATCH =
+    "interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/"
+    "freedesktop/DBus'";
+
 
 dbus_bool_t update_last_trackid(const char *trackid) {
-    size_t size = strlen(trackid) + 1;
+    if (trackid != NULL) {
+        // +1 for null char
+        size_t size = strlen(trackid) + 1;
 
-    last_trackid = (char *)realloc(last_trackid, size);
-    last_trackid[0] = '\0';
+        last_trackid = (char *)realloc(last_trackid, size);
+        last_trackid[0] = '\0';
 
-    strcpy(last_trackid, trackid);
+        strcpy(last_trackid, trackid);
 
-    if (last_trackid != NULL)
         return TRUE;
-    else
+    } else {
         return FALSE;
+    }
 }
 
 dbus_bool_t spotify_update_track(const char *current_trackid) {
+    // If trackid didn't change
     if (last_trackid != NULL && strcmp(current_trackid, last_trackid) != 0) {
         puts("Track Changed");
         // Send message to update track name
@@ -50,7 +63,7 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
 dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
         puts("Song is playing");
-        // Show pause, next, and previous button
+        // Show pause, next, and previous button on polybar
         if (send_ipc_polybar(4, "hook:module/playpause2",
                              "hook:module/previous2", "hook:module/next2",
                              "hook:module/spotify2")) {
@@ -64,7 +77,7 @@ dbus_bool_t spotify_playing() {
 dbus_bool_t spotify_paused() {
     if (CURRENT_SPOTIFY_STATE != PAUSED) {
         puts("Song is paused");
-        // Show play, next, and previous button
+        // Show play, next, and previous button on polybar
         if (send_ipc_polybar(4, "hook:module/playpause3",
                              "hook:module/previous2", "hook:module/next2",
                              "hook:module/spotify2")) {
@@ -77,7 +90,7 @@ dbus_bool_t spotify_paused() {
 
 dbus_bool_t spotify_exited() {
     if (CURRENT_SPOTIFY_STATE != EXITED) {
-        // Hide all buttons and track display
+        // Hide all buttons and track display on polybar
         if (send_ipc_polybar(4, "hook:module/playpause1",
                              "hook:module/previous1", "hook:module/next1",
                              "hook:module/spotify1")) {
@@ -123,10 +136,10 @@ dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
     return TRUE;
 }
 
-DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
+DBusHandlerResult properties_changed_handler(DBusConnection *connection,
                                              DBusMessage *message,
                                              void *user_data) {
-    if (VERBOSE) puts("Running handle_media_player_signal");
+    if (VERBOSE) puts("Running properties_changed_handler");
     DBusMessageIter iter;
     DBusMessageIter sub_iter;
     dbus_bool_t is_spotify = FALSE;
@@ -158,6 +171,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
 
     char *interface_name = iter_get_string(&iter);
 
+    // Check if interface is correct
     if (interface_name != NULL &&
         strcmp(interface_name, "org.mpris.MediaPlayer2.Player") != 0) {
         if (VERBOSE)
@@ -188,6 +202,7 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
+    // Make sure trackid begins with spotify
     char *trackid = iter_get_string(&sub_iter);
     if (trackid != NULL && strncmp(trackid, "spotify", 7) == 0) {
         spotify_update_track(trackid);
@@ -211,8 +226,8 @@ DBusHandlerResult handle_media_player_signal(DBusConnection *connection,
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         }
 
+        // Update polybar modules
         char *status = iter_get_string(&sub_iter);
-
         if (strcmp(status, "Paused") == 0) {
             spotify_paused();
         } else if (strcmp(status, "Playing") == 0) {
@@ -242,12 +257,14 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
      *
      */
 
+    // Try to get message arguments
     if (!dbus_message_get_args(message, NULL, DBUS_TYPE_STRING, &name,
                                DBUS_TYPE_STRING, &old_owner, DBUS_TYPE_STRING,
                                &new_owner, DBUS_TYPE_INVALID)) {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
+    // If name matches spotify and new owner is "", spotify disconnected
     if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
         strcmp(new_owner, "") == 0) {
         puts("Spotify disconnected");
@@ -259,13 +276,6 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
 }
 
 void free_user_data(void *memory) {}
-
-const char *PROPERTIES_CHANGED_MATCH =
-    "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',"
-    "path='/org/mpris/MediaPlayer2'";
-const char *NAME_OWNER_CHANGED_MATCH =
-    "interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/"
-    "freedesktop/DBus'";
 
 int main() {
     DBusConnection *connection;
@@ -295,7 +305,7 @@ int main() {
     }
 
     // Register handler for PropertiesChanged signal
-    if (!dbus_connection_add_filter(connection, handle_media_player_signal,
+    if (!dbus_connection_add_filter(connection, properties_changed_handler,
                                     NULL, free_user_data)) {
         fputs("Failed to add properties changed handler", stderr);
         return 1;
