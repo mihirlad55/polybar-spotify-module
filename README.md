@@ -115,7 +115,7 @@ hook-0 = echo ""
 hook-1 = echo "Pause"
 ; Paused
 hook-2 = echo "Play"
-click-left = "spotifyctl playpause"
+click-left = "spotifyctl -q playpause"
 
 
 [module/spotify]
