@@ -154,7 +154,7 @@ char *format_output(const char *artist, const char *title,
             if (!SUPPRESS_ERRORS) {
                 fputs(
                     "Failed to truncate artist. Please make sure the trunc "
-                    "string is smaller than the max title length.\n",
+                    "string is smaller than the max artist length.\n",
                     stderr);
             }
             exit(1);
@@ -165,7 +165,15 @@ char *format_output(const char *artist, const char *title,
         char *temp2 = str_replace_all(temp, "%title%", trunc_title);
 
         // Truncate output to max length
-        output = str_trunc(temp2, max_length, trunc);
+        if (!(output = str_trunc(temp2, max_length, trunc))) {
+            if (!SUPPRESS_ERRORS) {
+                fputs(
+                    "Failed to truncate output. Please make sure the trunc "
+                    "string is smaller than the max output length.\n",
+                    stderr);
+            }
+            exit(1);
+        }
 
         free(temp);
         free(temp2);
