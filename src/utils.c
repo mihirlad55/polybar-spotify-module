@@ -26,9 +26,8 @@ char *iter_get_string(DBusMessageIter *iter) {
         DBusBasicValue value;
         dbus_message_iter_get_basic(iter, &value);
 
-        size_t size = strlen(value.str) + 1;
-        str = (char *)malloc(size * sizeof(char));
-        str[0] = '\0';
+        size_t size = (strlen(value.str) + 1) * sizeof(char);
+        str = (char *)malloc(size);
         strcpy(str, value.str);
 
         return str;
@@ -53,15 +52,15 @@ dbus_bool_t recurse_iter_of_signature(DBusMessageIter *iter,
                                       DBusMessageIter *subiter,
                                       const char *signature) {
     char *iter_signature = dbus_message_iter_get_signature(iter);
-    dbus_bool_t res = FALSE;
 
     if (strcmp(iter_signature, signature) == 0) {
         dbus_message_iter_recurse(iter, subiter);
-        res = TRUE;
+        dbus_free(iter_signature);
+        return TRUE;
+    } else {
+        dbus_free(iter_signature);
+        return FALSE;
     }
-
-    dbus_free(iter_signature);
-    return res;
 }
 
 dbus_bool_t iter_go_to_key(DBusMessageIter *element_iter,
@@ -80,6 +79,7 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *element_iter,
     dbus_free(iter_signature);
 
     int current_type;
+
     while ((current_type = dbus_message_iter_get_arg_type(element_iter)) !=
            DBUS_TYPE_INVALID) {
         recurse_iter_of_type(element_iter, entry_iter, DBUS_TYPE_DICT_ENTRY);
@@ -153,22 +153,27 @@ dbus_bool_t msleep(long milliseconds) {
 }
 
 char *join_path(const char *p1, const char *p2) {
-    size_t len1 = strlen(p1) + 1;  // Including null character
-    size_t len2 = strlen(p2) + 1;  // Including null character
+    size_t len1 = strlen(p1);
+    size_t len2 = strlen(p2);
 
     char *res;
 
-    if (p1[len1 - 2] != '/') {
-        res = (char *)malloc((len1 + len2 + 1) * sizeof(char));
-        res[0] = '\0';
-        strcat(res, p1);
+    if (p1[len1 - 1] != '/') {
+        size_t res_size = (len1 + len2 + 2) * sizeof(char);
+        res = (char *)malloc(res_size);
+
+        strcpy(res, p1);
         strcat(res, "/");
         strcat(res, p2);
+
         return res;
-    } else if (p1[len1 - 2] == '/') {
-        res = (char *)malloc((len1 + len2) * sizeof(char));
-        res[0] = '\0';
+    } else if (p1[len1 - 1] == '/') {
+        size_t res_size = (len1 + len2 + 1) * sizeof(char);
+        res = (char *)malloc(res_size);
+
+        strcpy(res, p1);
         strcat(res, p2);
+
         return res;
     } else {
         return NULL;
@@ -292,7 +297,7 @@ char *str_trunc(char *str, const int max_len, char *trunc) {
 
     if (len > max_len) {
         // New size is max_len + null char
-        size_t new_str_size = max_len + 1; ;
+        size_t new_str_size = max_len + 1;
 
         new_str = (char *)calloc(new_str_size, sizeof(char));
 
@@ -301,7 +306,7 @@ char *str_trunc(char *str, const int max_len, char *trunc) {
         strcat(new_str, trunc);
     } else {
         // +1 for null char
-        size_t new_str_size = len + 1; ;
+        size_t new_str_size = len + 1;
 
         new_str = (char *)calloc(new_str_size, sizeof(char));
 
