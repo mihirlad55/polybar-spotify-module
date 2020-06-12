@@ -47,9 +47,10 @@ char *get_song_artist_from_metadata(DBusMessage *msg);
  *                string will be replaced with trunc while sataisfying the
  *                max length constraints.
  */
-char *format_output(char *artist, char *title, int max_artist_length,
-                    int max_title_length, int max_length, char *format,
-                    char *trunc);
+char *format_output(const char *artist, const char *title,
+                    const int max_artist_length, const int max_title_length,
+                    const int max_length, const char *format,
+                    const char *trunc);
 
 /**
  * Prints the status output message according to the specified format options
@@ -67,9 +68,9 @@ char *format_output(char *artist, char *title, int max_artist_length,
  *                    or output ends and will honor the max length constraints.
  *
  */
-void get_status(DBusConnection *connection, int max_artist_length,
-                int max_title_length, int max_length, char *format,
-                char *trunc);
+void get_status(DBusConnection *connection, const int max_artist_length,
+                const int max_title_length, const int max_length,
+                const char *format, const char *trunc);
 
 /**
  * Call the specified org.mpris.MediaPlayer2.Player method

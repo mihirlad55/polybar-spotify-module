@@ -114,9 +114,10 @@ char *get_song_artist_from_metadata(DBusMessage *msg) {
     return artist;
 }
 
-char *format_output(char *artist, char *title, int max_artist_length,
-                    int max_title_length, int max_length, char *format,
-                    char *trunc) {
+char *format_output(const char *artist, const char *title,
+                    const int max_artist_length, const int max_title_length,
+                    const int max_length, const char *format,
+                    const char *trunc) {
     // Get total number of each token
     const int NUM_OF_ARTIST_TOK = num_of_matches(format, "%artist%");
     const int NUM_OF_TITLE_TOK = num_of_matches(format, "%title%");
@@ -181,9 +182,9 @@ char *format_output(char *artist, char *title, int max_artist_length,
     return output;
 }
 
-void get_status(DBusConnection *connection, int max_artist_length,
-                int max_title_length, int max_length, char *format,
-                char *trunc) {
+void get_status(DBusConnection *connection, const int max_artist_length,
+                const int max_title_length, const int max_length,
+                const char *format, const char *trunc) {
     DBusError err;
     dbus_error_init(&err);
 

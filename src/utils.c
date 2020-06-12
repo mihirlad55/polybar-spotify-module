@@ -39,8 +39,8 @@ char *iter_get_string(DBusMessageIter *iter) {
 }
 
 dbus_bool_t recurse_iter_of_type(DBusMessageIter *iter,
-                                 DBusMessageIter *subiter, int type) {
-    int iter_type = dbus_message_iter_get_arg_type(iter);
+                                 DBusMessageIter *subiter, const int type) {
+    const int iter_type = dbus_message_iter_get_arg_type(iter);
 
     // Check if iter type matches
     if (iter_type == type) {
@@ -71,7 +71,7 @@ dbus_bool_t recurse_iter_of_signature(DBusMessageIter *iter,
 
 dbus_bool_t iter_go_to_key(DBusMessageIter *element_iter,
                            DBusMessageIter *entry_iter, const char *key) {
-    int iter_type = dbus_message_iter_get_arg_type(element_iter);
+    const int iter_type = dbus_message_iter_get_arg_type(element_iter);
     char *iter_signature = dbus_message_iter_get_signature(element_iter);
 
     // Make sure iter is on dict entry and signature matches string-variant
@@ -95,7 +95,7 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *element_iter,
         // Get dict entry key
         DBusBasicValue value;
         dbus_message_iter_get_basic(entry_iter, &value);
-        char *k = value.str;
+        const char *k = value.str;
 
         // Check if dict key matches key argument
         if (strcmp(k, key) == 0) {
@@ -112,7 +112,7 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *element_iter,
     return FALSE;
 }
 
-dbus_bool_t iter_try_step_into_type(DBusMessageIter *iter, int type) {
+dbus_bool_t iter_try_step_into_type(DBusMessageIter *iter, const int type) {
     DBusMessageIter sub_iter;
 
     // Try to initialize sub_iter inside container pointed to by iter if type
@@ -149,7 +149,7 @@ dbus_bool_t iter_try_step_into_signature(DBusMessageIter *iter,
     return TRUE;
 }
 
-dbus_bool_t msleep(long milliseconds) {
+dbus_bool_t msleep(const long milliseconds) {
     struct timespec ts;
     int res;
 
@@ -172,15 +172,15 @@ dbus_bool_t msleep(long milliseconds) {
 }
 
 char *join_path(const char *p1, const char *p2) {
-    size_t len1 = strlen(p1);
-    size_t len2 = strlen(p2);
+    const size_t len1 = strlen(p1);
+    const size_t len2 = strlen(p2);
 
     char *res;
 
     // Check if last character of p1 is '/'
     if (p1[len1 - 1] != '/') {
         // +1 for null char and +1 for '/'
-        size_t res_size = (len1 + len2 + 2) * sizeof(char);
+        const size_t res_size = (len1 + len2 + 2) * sizeof(char);
         res = (char *)malloc(res_size);
 
         // Join p1 and p2 with '/'
@@ -191,7 +191,7 @@ char *join_path(const char *p1, const char *p2) {
         return res;
     } else if (p1[len1 - 1] == '/') {
         // +1 for null char
-        size_t res_size = (len1 + len2 + 1) * sizeof(char);
+        const size_t res_size = (len1 + len2 + 1) * sizeof(char);
         res = (char *)malloc(res_size);
 
         // Join p1 and p2
@@ -253,9 +253,9 @@ dbus_bool_t get_polybar_ipc_paths(const char *ipc_path, char **ptr_paths[],
     return TRUE;
 }
 
-char *str_replace_all(char *str, char *find, char *repl) {
+char *str_replace_all(const char *str, const char *find, const char *repl) {
     // Pointer to substring of str
-    char *substr = str;
+    const char *substr = str;
 
     // # of characters that need to be allocated per replacement
     const int REPL_DIFF = strlen(repl) - strlen(find);
@@ -318,16 +318,16 @@ char *str_replace_all(char *str, char *find, char *repl) {
     return new_str;
 }
 
-char *str_trunc(char *str, const int max_len, char *trunc) {
-    size_t len = strlen(str);
-    size_t trunc_len = strlen(trunc);
+char *str_trunc(const char *str, const int max_len, const char *trunc) {
+    const size_t len = strlen(str);
+    const size_t trunc_len = strlen(trunc);
     char *new_str;
 
     if (trunc_len > max_len) return NULL;
 
     if (len > max_len) {
         // New size is max_len + null char
-        size_t new_str_size = max_len + 1;
+        const size_t new_str_size = max_len + 1;
 
         new_str = (char *)calloc(new_str_size, sizeof(char));
 
@@ -336,7 +336,7 @@ char *str_trunc(char *str, const int max_len, char *trunc) {
         strcat(new_str, trunc);
     } else {
         // +1 for null char
-        size_t new_str_size = len + 1;
+        const size_t new_str_size = len + 1;
 
         new_str = (char *)calloc(new_str_size, sizeof(char));
 
@@ -346,8 +346,8 @@ char *str_trunc(char *str, const int max_len, char *trunc) {
     return new_str;
 }
 
-int num_of_matches(char *str, char *find) {
-    char *substr = str;
+int num_of_matches(const char *str, const char *find) {
+    const char *substr = str;
     char *match;
     int num_of_matches = 0;
 
@@ -355,7 +355,7 @@ int num_of_matches(char *str, char *find) {
         num_of_matches++;
 
         // Get offset of first match
-        size_t offset = match - substr;
+        const size_t offset = match - substr;
 
         // Shift substr pointer to character after match
         substr += offset + strlen(find);

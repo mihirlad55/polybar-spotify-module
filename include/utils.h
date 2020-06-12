@@ -35,7 +35,7 @@ void print_string_iter(DBusMessageIter *iter);
  *                      initialized, otherwise returns FALSE.
  */
 dbus_bool_t recurse_iter_of_type(DBusMessageIter *iter,
-                                 DBusMessageIter *subiter, int type);
+                                 DBusMessageIter *subiter, const int type);
 
 /**
  * Initialize subiter inside the container pointed to be iter if it is of the
@@ -82,7 +82,7 @@ dbus_bool_t iter_go_to_key(DBusMessageIter *array_iter,
  *                      the container and the iter is successfully inside the
  *                      container, otherwise returns FALSE.
  */
-dbus_bool_t iter_try_step_into_type(DBusMessageIter *iter, int type);
+dbus_bool_t iter_try_step_into_type(DBusMessageIter *iter, const int type);
 
 /**
  * Try to recurse the iter into a container that it is pointing at with the
@@ -126,7 +126,7 @@ dbus_bool_t iter_try_step_to_key(DBusMessageIter *element_iter,
  * @returns dbus_bool_t Returns TRUE if the function is able to sleep,
  *                      successfully, otherwise FALSE.
  */
-dbus_bool_t msleep(long milliseconds);
+dbus_bool_t msleep(const long milliseconds);
 
 /**
  * Get an array of paths to polybar's IPC files in the specified directory.
@@ -168,7 +168,7 @@ char *join_path(const char *p1, const char *p2);
  *
  * @returns char* A new string with the replacements made if any.
  */
-char* str_replace_all(char *str, char *find, char *repl);
+char* str_replace_all(const char *str, const char *find, const char *repl);
 
 /**
  * Truncate the specified string if it longer than the specified maximum length
@@ -181,7 +181,7 @@ char* str_replace_all(char *str, char *find, char *repl);
  * @returns char* The truncated string. If str is longer than max_len, str will
  * be cut off at max_len, and the end of the string will be replaced with trunc.
  */
-char* str_trunc(char *str, const int max_len, char *trunc);
+char* str_trunc(const char *str, const int max_len, const char *trunc);
 
 /**
  * Find the number of matches of a given string in another string. This works
@@ -194,6 +194,6 @@ char* str_trunc(char *str, const int max_len, char *trunc);
  *
  * @returns int The number of matches found
  */
-int num_of_matches(char *str, char *find);
+int num_of_matches(const char *str, const char *find);
 
 #endif
