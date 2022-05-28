@@ -204,7 +204,7 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
 
     // Make sure trackid begins with spotify
     char *trackid = iter_get_string(&sub_iter);
-    if (trackid != NULL && strncmp(trackid, "spotify", 7) == 0) {
+    if (trackid != NULL && strncmp(trackid, "/com/spotify", 12) == 0) {
         spotify_update_track(trackid);
         update_last_trackid(trackid);
         is_spotify = TRUE;
