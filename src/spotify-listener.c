@@ -21,6 +21,9 @@ const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 // Used to check if track has changed
 char *last_trackid = NULL;
 
+// Used to identify spotify for Play/Pause
+char *dbus_senderid = NULL;
+
 // Current state of spotify
 typedef enum { PLAYING, PAUSED, EXITED } SpotifyState;
 SpotifyState CURRENT_SPOTIFY_STATE = EXITED;
@@ -58,6 +61,22 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
         if (send_ipc_polybar(1, "hook:module/spotify2")) return TRUE;
     }
     return FALSE;
+}
+
+dbus_bool_t spotify_update_sender(const char *senderid) {
+    if (senderid != NULL) {
+        // +1 for null char
+        size_t size = strlen(senderid) + 1;
+
+        dbus_senderid = (char *)realloc(dbus_senderid, size);
+        dbus_senderid[0] = '\0';
+
+        strcpy(dbus_senderid, senderid);
+
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 dbus_bool_t spotify_playing() {
@@ -198,6 +217,14 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
           // Step into container
           iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
           // Verify string type
+          dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING) &&
+
+          !(recurse_iter_of_type(&iter, &sub_iter, DBUS_TYPE_ARRAY) &&
+          // Go to value with Metadata key
+          iter_try_step_to_key(&sub_iter, "PlaybackStatus") &&
+          // Step into variant value
+          iter_try_step_into_type(&sub_iter, DBUS_TYPE_VARIANT) &&
+          // Verify string type
           dbus_message_iter_get_arg_type(&sub_iter) == DBUS_TYPE_STRING)) {
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
@@ -205,6 +232,7 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
     // Make sure trackid begins with spotify
     char *trackid = iter_get_string(&sub_iter);
     if (trackid != NULL && strncmp(trackid, "/com/spotify", 12) == 0) {
+        spotify_update_sender(dbus_message_get_sender(message));
         spotify_update_track(trackid);
         update_last_trackid(trackid);
         is_spotify = TRUE;
@@ -213,6 +241,10 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
     }
 
     free(trackid);
+
+    if (!is_spotify && dbus_senderid && strcmp(dbus_senderid, dbus_message_get_sender(message)) == 0) {
+        is_spotify = TRUE;
+    }
 
     if (is_spotify) {
         // Recurse into array
