@@ -12,7 +12,7 @@
  *
  * @returns dbus_bool_t TRUE if messages successfully sent, FALSE otherwise.
  */
-dbus_bool_t send_ipc_polybar(int numOfMsgs, ...);
+dbus_bool_t polybar_msg(int numOfMsgs, ...);
 
 /**
  * DBus handler function for PropertiesChanged signals. This is automatically
