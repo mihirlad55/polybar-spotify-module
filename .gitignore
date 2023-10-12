@@ -1,4 +1,6 @@
 *.o
 .vgcore.*
+.cache
+compile_commands.json
 bin/
 obj/
