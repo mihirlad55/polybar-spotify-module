@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <syslog.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -64,12 +65,12 @@ dbus_bool_t get_spotify_status() {
 	g_assert_no_error(error);
 
 	/* read the player property of the interface */
-	variant = g_dbus_proxy_get_cached_property(proxy, "Identity");
-  if(variant == NULL){
-    printf("Error in getting current mpris player.");
-    return FALSE;
+  variant = g_dbus_proxy_get_cached_property(proxy, "Identity");
+
+  g_assert(variant != NULL);
+  if(g_variant_is_of_type(variant, G_VARIANT_TYPE_STRING) == TRUE){
+    g_variant_get(variant, "s", &info);
   }
-	g_variant_get(variant, "s", &info);
 
 	g_variant_unref(variant);
 	printf("Current mpris media player is: %s\n", info);
@@ -432,7 +433,7 @@ int main() {
   is_spotify = get_spotify_status();
 
   if (is_spotify) {
-    printf("Current track: %s\n", get_now_playing());
+    update_last_trackid(get_now_playing());
   }
 
   // Receive messages for PropertiesChanged signal to detect track changes
