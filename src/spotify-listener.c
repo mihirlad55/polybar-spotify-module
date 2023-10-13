@@ -1,6 +1,8 @@
 #include "../include/spotify-listener.h"
 
 #include <dbus-1.0/dbus/dbus.h>
+#include <glib-2.0/glib.h>
+#include <glib-2.0/gio/gio.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <stdarg.h>
@@ -26,6 +28,8 @@ char *last_trackid = NULL;
 // Used to identify spotify for Play/Pause
 char *dbus_senderid = NULL;
 
+dbus_bool_t is_spotify = FALSE;
+
 // Current state of spotify
 typedef enum { PLAYING, PAUSED, EXITED } SpotifyState;
 SpotifyState CURRENT_SPOTIFY_STATE = EXITED;
@@ -38,6 +42,107 @@ const char *NAME_OWNER_CHANGED_MATCH =
 "interface='org.freedesktop.DBus',member='NameOwnerChanged',path='/org/"
 "freedesktop/DBus'";
 
+dbus_bool_t get_spotify_status() {
+  GDBusProxy *proxy;
+	GDBusConnection *conn;
+	GError *error = NULL;
+	const char *info;
+	GVariant *variant;
+  dbus_bool_t player_is_spotify = FALSE;
+
+	conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+	g_assert_no_error(error);
+
+	proxy = g_dbus_proxy_new_sync(conn,
+				      G_DBUS_PROXY_FLAGS_NONE,
+				      NULL,				/* GDBusInterfaceInfo */
+				      "org.mpris.MediaPlayer2.playerctld",		/* name */
+				      "/org/mpris/MediaPlayer2",	/* object path */
+				      "org.mpris.MediaPlayer2",	/* interface */
+				      NULL,				/* GCancellable */
+				      &error);
+	g_assert_no_error(error);
+
+	/* read the player property of the interface */
+	variant = g_dbus_proxy_get_cached_property(proxy, "Identity");
+  if(variant == NULL){
+    printf("Error in getting current mpris player.");
+    return FALSE;
+  }
+	g_variant_get(variant, "s", &info);
+
+	g_variant_unref(variant);
+	printf("Current mpris media player is: %s\n", info);
+
+	g_object_unref(proxy);
+	g_object_unref(conn);
+
+  player_is_spotify = strcmp(info, "Spotify") == 0;
+  return player_is_spotify;
+}
+
+const char* get_now_playing() {
+  GDBusProxy *proxy;
+	GDBusConnection *conn;
+	GError *error = NULL;
+	const char *trackid;
+  const char *playback_status;
+	GVariant *variant;
+
+	conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+	g_assert_no_error(error);
+
+	proxy = g_dbus_proxy_new_sync(conn,
+				      G_DBUS_PROXY_FLAGS_NONE,
+				      NULL,				/* GDBusInterfaceInfo */
+				      "org.mpris.MediaPlayer2.spotify",		/* name */
+				      "/org/mpris/MediaPlayer2",	/* object path */
+				      "org.mpris.MediaPlayer2.Player",	/* interface */
+				      NULL,				/* GCancellable */
+				      &error);
+	g_assert_no_error(error);
+
+  // Format of the metadata...
+  // (<{'mpris:trackid': <'/com/spotify/track/0pJqL2QSmybnABaFFTJtCs'>,
+  //  'mpris:length': <uint64 125996000>,
+  //  'mpris:artUrl': <'https://i.scdn.co/image/...'>,
+  //  'xesam:album': <'Astral Distance'>,
+  //  'xesam:albumArtist': <['Muni Yogi']>,
+  //  'xesam:artist': <['Muni Yogi']>,
+  //  'xesam:autoRating': <0.56000000000000005>,
+  //  'xesam:discNumber': <1>,
+  //  'xesam:title': <'Astral Distance'>,
+  //  'xesam:trackNumber': <1>,
+  //  'xesam:url': <'https://open.spotify.com/track/0pJqL2QSmybnABaFFTJtCs'>}>,)
+
+	variant = g_dbus_proxy_get_cached_property(proxy, "Metadata");
+	g_assert(variant != NULL);
+
+  g_variant_lookup(variant, "mpris:trackid", "s", &trackid);
+  printf("Current track is: %s\n", trackid);
+
+	g_variant_unref(variant);
+	/* read the playback status of the interface */
+	variant = g_dbus_proxy_get_cached_property(proxy, "PlaybackStatus");
+	g_assert(variant != NULL);
+	g_variant_get(variant, "s", &playback_status);
+
+	g_variant_unref(variant);
+
+	printf("Spotify playback is: %s\n", playback_status);
+
+  if(strcmp(playback_status, "Playing") == 0){
+    spotify_playing();
+  }
+  else{
+    spotify_paused();
+  }
+
+	g_object_unref(proxy);
+	g_object_unref(conn);
+
+  return trackid;
+}
 
 dbus_bool_t update_last_trackid(const char *trackid) {
   if (trackid != NULL) {
@@ -100,7 +205,7 @@ dbus_bool_t spotify_paused() {
     puts("Song is paused");
     // Show play, next, and previous button on polybar
     if (polybar_msg(4, "#playpause.hook.2",
-          "#previous.hook.1", "#nest.hook.1",
+          "#previous.hook.1", "#next.hook.1",
           "#spotify.hook.1")) {
       CURRENT_SPOTIFY_STATE = PAUSED;
       return TRUE;
@@ -165,7 +270,6 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
   if (VERBOSE) puts("Running properties_changed_handler");
   DBusMessageIter iter;
   DBusMessageIter sub_iter;
-  dbus_bool_t is_spotify = FALSE;
   dbus_message_iter_init(message, &iter);
 
   /**
@@ -323,6 +427,12 @@ int main() {
   if (!(connection = dbus_bus_get(DBUS_BUS_SESSION, &err))) {
     fputs(err.message, stderr);
     return 1;
+  }
+
+  is_spotify = get_spotify_status();
+
+  if (is_spotify) {
+    printf("Current track: %s\n", get_now_playing());
   }
 
   // Receive messages for PropertiesChanged signal to detect track changes

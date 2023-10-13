@@ -1,5 +1,5 @@
 [Unit]
-Description=A program that monitors Spotify DBus signals and communicates with polybar over IPC to control the polybar spotify modules.
+Description=A program that monitors Spotify DBus signals and communicates with polybar over dbus to update the module and control spotify.
 After=graphical.target
 
 [Service]
@@ -9,4 +9,3 @@ RestartSec=5
 
 [Install]
 WantedBy=default.target
-
