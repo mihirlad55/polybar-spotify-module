@@ -49,10 +49,15 @@ dbus_bool_t update_last_trackid(const char *trackid) {
 
     last_trackid = (char *)realloc(last_trackid, size);
     last_trackid[0] = '\0';
-
     strcpy(last_trackid, trackid);
 
-    return TRUE;
+
+    if (polybar_msg(4, "#playpause.hook.1",
+          "#previous.hook.1", "#next.hook.1",
+          "#spotify.hook.1")) {
+      CURRENT_SPOTIFY_STATE = PLAYING;
+      return TRUE;
+    }
   } else {
     return FALSE;
   }
