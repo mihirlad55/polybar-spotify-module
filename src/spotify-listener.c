@@ -152,13 +152,17 @@ dbus_bool_t update_last_trackid(const char *trackid) {
 
     last_trackid = (char *)realloc(last_trackid, size);
     last_trackid[0] = '\0';
-
     strcpy(last_trackid, trackid);
 
-    return TRUE;
-  } else {
-    return FALSE;
+
+    if (polybar_msg(4, "#playpause.hook.1",
+          "#previous.hook.1", "#next.hook.1",
+          "#spotify.hook.1")) {
+      CURRENT_SPOTIFY_STATE = PLAYING;
+      return TRUE;
+    }
   }
+    return FALSE;
 }
 
 dbus_bool_t spotify_update_track(const char *current_trackid) {
@@ -234,7 +238,7 @@ dbus_bool_t polybar_msg(int numOfMsgs, ...) {
   va_start(args, numOfMsgs);
   for (int m = 0; m < numOfMsgs; m++) {
     char *message = va_arg(args, char *);
-    char *exec_args[]={"polybar-msg","action", message, NULL};
+    char *exec_args[]={"/usr/bin/polybar-msg","action", message, NULL};
 
     // fork and exec polybar-msg calls for each variadic
     int pid = fork();
@@ -247,7 +251,7 @@ dbus_bool_t polybar_msg(int numOfMsgs, ...) {
       printf("%s%s%s\n", "Sending the message '", message, "' via "
           "polybar-msg.\n");
 
-      execvp(exec_args[0], exec_args);
+      execv(exec_args[0], exec_args);
 
       printf("Execvp error, unable to send message to polybar.\n");
       perror(errno);
