@@ -58,9 +58,8 @@ dbus_bool_t update_last_trackid(const char *trackid) {
       CURRENT_SPOTIFY_STATE = PLAYING;
       return TRUE;
     }
-  } else {
-    return FALSE;
   }
+    return FALSE;
 }
 
 dbus_bool_t spotify_update_track(const char *current_trackid) {
