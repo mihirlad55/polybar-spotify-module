@@ -1,6 +1,5 @@
 #include "../include/spotify-listener.h"
 
-#include <dbus-1.0/dbus/dbus.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -22,6 +21,9 @@ char *last_trackid = NULL;
 
 // Used to identify spotify for Play/Pause
 char *dbus_senderid = NULL;
+
+// Make is_spotify global for init checks.
+dbus_bool_t is_spotify = FALSE;
 
 // Current state of spotify
 typedef enum { PLAYING, PAUSED, EXITED } SpotifyState;
@@ -313,9 +315,122 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
 
 void free_user_data(void *memory) {}
 
+dbus_bool_t get_spotify_status(GDBusConnection *conn) {
+    GDBusProxy *proxy;
+    GError *error = NULL;
+    const char *info;
+    GVariant *variant;
+    dbus_bool_t player_is_spotify = FALSE;
+
+    proxy = g_dbus_proxy_new_sync(conn,
+            G_DBUS_PROXY_FLAGS_NONE,
+            NULL,				/* GDBusInterfaceInfo */
+            "org.mpris.MediaPlayer2.playerctld",		/* name */
+            "/org/mpris/MediaPlayer2",	/* object path */
+            "org.mpris.MediaPlayer2",	/* interface */
+            NULL,				/* GCancellable */
+            &error);
+    if (error != NULL){
+        fputs(error->message, stderr);
+        return player_is_spotify;
+    }
+
+    /* read the player property of the interface */
+    variant = g_dbus_proxy_get_cached_property(proxy, "Identity");
+    if(variant == NULL){
+        // likely uncached, meaning the value hasn't been modified in dbus
+        // and spotify is not currently in control
+        return player_is_spotify;
+    }
+
+    if(g_variant_is_of_type(variant, G_VARIANT_TYPE_STRING) == TRUE){
+        g_variant_get(variant, "s", &info);
+        printf("Current mpris media player is: %s\n", info);
+    }
+
+    g_variant_unref(variant);
+    g_object_unref(proxy);
+    g_object_unref(conn);
+
+    player_is_spotify = strcmp(info, "Spotify") == 0;
+    return player_is_spotify;
+}
+
+const char* get_now_playing(GDBusConnection *conn) {
+    GDBusProxy *proxy;
+    GError *error = NULL;
+    const char *trackid;
+    const char *playback_status;
+    GVariant *variant;
+
+    conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+
+
+    proxy = g_dbus_proxy_new_sync(conn,
+            G_DBUS_PROXY_FLAGS_NONE,
+            NULL,				/* GDBusInterfaceInfo */
+            "org.mpris.MediaPlayer2.playerctld",		/* name */
+            "/org/mpris/MediaPlayer2",	/* object path */
+            "org.mpris.MediaPlayer2.Player",	/* interface */
+            NULL,				/* GCancellable */
+            &error);
+    if (error != NULL){
+        fputs(error->message, stderr);
+        return NULL;
+    }
+
+    // Format of the metadata...
+    // (<{'mpris:trackid': <'/com/spotify/track/0pJqL2QSmybnABaFFTJtCs'>,
+    //  'mpris:length': <uint64 125996000>,
+    //  'mpris:artUrl': <'https://i.scdn.co/image/...'>,
+    //  'xesam:album': <'Astral Distance'>,
+    //  'xesam:albumArtist': <['Muni Yogi']>,
+    //  'xesam:artist': <['Muni Yogi']>,
+    //  'xesam:autoRating': <0.56000000000000005>,
+    //  'xesam:discNumber': <1>,
+    //  'xesam:title': <'Astral Distance'>,
+    //  'xesam:trackNumber': <1>,
+    //  'xesam:url': <'https://open.spotify.com/track/0pJqL2QSmybnABaFFTJtCs'>}>,)
+
+    variant = g_dbus_proxy_get_cached_property(proxy, "Metadata");
+    if(variant == NULL){
+        return NULL;
+    }
+
+    g_variant_lookup(variant, "mpris:trackid", "s", &trackid);
+    printf("Current track is: %s\n", trackid);
+
+    g_variant_unref(variant);
+    /* read the playback status of the interface */
+    variant = g_dbus_proxy_get_cached_property(proxy, "PlaybackStatus");
+    if(variant == NULL){
+        return trackid;
+    }
+    g_variant_get(variant, "s", &playback_status);
+
+    g_variant_unref(variant);
+
+    printf("Spotify playback is: %s\n", playback_status);
+
+    if(strcmp(playback_status, "Playing") == 0){
+        spotify_playing();
+    }
+    else{
+        spotify_paused();
+    }
+
+    g_object_unref(proxy);
+    g_object_unref(conn);
+
+    return trackid;
+}
+
 int main() {
     DBusConnection *connection;
     DBusError err;
+
+    GDBusConnection *conn;
+    GError *error;
 
     dbus_error_init(&err);
 
@@ -323,6 +438,20 @@ int main() {
     if (!(connection = dbus_bus_get(DBUS_BUS_SESSION, &err))) {
         fputs(err.message, stderr);
         return 1;
+    }
+
+    error = NULL;
+    conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+    if (error != NULL){
+        fputs(error->message, stderr);
+        return 1;
+    }
+
+    // Check for spotify status on init. This runs once.
+    is_spotify = get_spotify_status(conn);
+    if (is_spotify) {
+      const char * trackid = get_now_playing(conn);
+      update_last_trackid(trackid);
     }
 
     // Receive messages for PropertiesChanged signal to detect track changes

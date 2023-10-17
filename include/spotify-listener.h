@@ -2,6 +2,9 @@
 #define _SPOTIFY_LISTENER_H_
 
 #include <dbus-1.0/dbus/dbus.h>
+#include <glib-2.0/glib.h>
+#include <glib-2.0/gio/gio.h>
+#include <glib-2.0/glib-object.h>
 #include <stdarg.h>
 
 /**
@@ -105,5 +108,22 @@ dbus_bool_t update_last_trackid(const char *trackid);
  * @returns dbus_bool_t TRUE if the trackid has changed, FALSE otherwise
  */
 dbus_bool_t spotify_update_track(const char *current_trackid);
+
+/**
+ * Connect to dbus using a gio proxy and check the Identity property of the bus
+ * interface org.mpris.MediaPlayer2 for 'Spotify'
+ * @returns dbus_bool_t TRUE if Spotify is current player, FALSE otherwise
+ */
+dbus_bool_t get_spotify_status(GDBusConnection *conn);
+
+/**
+ * Connect to dbus using a gio proxy and query the Metadata property of the bus
+ * interface org.mpris.MediaPlayer2.Player.
+ * Calls spotify_playing() or spotify_paused() as appropriate to set hooks
+ * in the module.
+ * @returns char* <trackid> of from Metadata for use in updates or a null*
+ * if unable to get <trackid>
+ */
+const char* get_now_playing(GDBusConnection *conn);
 
 #endif
