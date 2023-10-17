@@ -1,6 +1,6 @@
 CC = gcc
-LIBS := dbus-1
-CFLAGS = $(shell pkg-config --cflags dbus-1)
+LIBS := dbus-1 gio-2.0 glib-2.0
+CFLAGS = $(shell pkg-config --cflags dbus-1 gio-2.0 glib-2.0)
 
 LIBS_INC := $(foreach lib,$(LIBS),-l$(lib))
 

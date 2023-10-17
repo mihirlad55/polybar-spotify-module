@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "../include/utils.h"
 
@@ -15,8 +16,6 @@ const dbus_bool_t VERBOSE = TRUE;
 #else
 const dbus_bool_t VERBOSE = FALSE;
 #endif
-
-const char *POLYBAR_IPC_DIRECTORY = "/tmp";
 
 // Used to check if track has changed
 char *last_trackid = NULL;
@@ -58,7 +57,13 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
     if (last_trackid != NULL && strcmp(current_trackid, last_trackid) != 0) {
         puts("Track Changed");
         // Send message to update track name
-        if (send_ipc_polybar(1, "hook:module/spotify2")) return TRUE;
+        // if track name changed then spotify is playing.
+        if (send_polybar_msg(4, "#playpause.hook.1", "#previous.hook.1",
+                    "#next.hook.1", "#spotify.hook.1")) {
+            CURRENT_SPOTIFY_STATE = PLAYING;
+            return TRUE;
+    }
+
     }
     return FALSE;
 }
@@ -83,9 +88,8 @@ dbus_bool_t spotify_playing() {
     if (CURRENT_SPOTIFY_STATE != PLAYING) {
         puts("Song is playing");
         // Show pause, next, and previous button on polybar
-        if (send_ipc_polybar(4, "hook:module/playpause2",
-                             "hook:module/previous2", "hook:module/next2",
-                             "hook:module/spotify2")) {
+        if (send_polybar_msg(4, "#playpause.hook.1", "#previous.hook.1",
+                    "#next.hook.1", "#spotify.hook.1")) {
             CURRENT_SPOTIFY_STATE = PLAYING;
             return TRUE;
         }
@@ -97,9 +101,8 @@ dbus_bool_t spotify_paused() {
     if (CURRENT_SPOTIFY_STATE != PAUSED) {
         puts("Song is paused");
         // Show play, next, and previous button on polybar
-        if (send_ipc_polybar(4, "hook:module/playpause3",
-                             "hook:module/previous2", "hook:module/next2",
-                             "hook:module/spotify2")) {
+        if (send_polybar_msg(4, "#playpause.hook.2", "#previous.hook.1",
+                    "#next.hook.1", "#spotify.hook.1")) {
             CURRENT_SPOTIFY_STATE = PAUSED;
             return TRUE;
         }
@@ -110,9 +113,8 @@ dbus_bool_t spotify_paused() {
 dbus_bool_t spotify_exited() {
     if (CURRENT_SPOTIFY_STATE != EXITED) {
         // Hide all buttons and track display on polybar
-        if (send_ipc_polybar(4, "hook:module/playpause1",
-                             "hook:module/previous1", "hook:module/next1",
-                             "hook:module/spotify1")) {
+        if (send_polybar_msg(4, "#playpause.hook.0", "#previous.hook.0",
+                    "#next.hook.0", "#spotify.hook.0")) {
             CURRENT_SPOTIFY_STATE = EXITED;
             return TRUE;
         }
@@ -120,37 +122,39 @@ dbus_bool_t spotify_exited() {
     return FALSE;
 }
 
-dbus_bool_t send_ipc_polybar(int numOfMsgs, ...) {
-    char **paths;
-    size_t num_of_paths;
+dbus_bool_t send_polybar_msg(int numOfMsgs, ...) {
     va_list args;
 
-    // Pass address of pointer to array of strings
-    get_polybar_ipc_paths(POLYBAR_IPC_DIRECTORY, &paths, &num_of_paths);
+    va_start(args, numOfMsgs);
+    for (int m = 0; m < numOfMsgs; m++) {
+        char *message = va_arg(args, char *);
+        char *exec_args[]={"/usr/bin/polybar-msg","action", message, NULL};
 
-    for (size_t p = 0; p < num_of_paths; p++) {
-        FILE *fp;
+        // fork and exec polybar-msg calls for each variadic
+        int pid = fork();
+        if (pid < 0){
+            puts("Fork error, unable to send message to polybar.\n");
+            perror("Error: ");
+            return FALSE;
+        }
+        else if (pid == 0){
+            if(VERBOSE){
+                printf("%s%s%s\n", "Sending the message '", message, "' via "
+                        "polybar-msg.\n");
+            }
 
-        va_start(args, numOfMsgs);
-        for (int m = 0; m < numOfMsgs; m++) {
-            const char *message = va_arg(args, char *);
+            execv(exec_args[0], exec_args);
 
-            fp = fopen(paths[p], "w");
-            fputs(message, fp);
-            printf("%s%s%s%s%s\n", "Sending the message '", message, "' to '",
-                   paths[p], "'");
-
-            fclose(fp);
-
+            puts("Execvp error, unable to send message to polybar.\n");
+            perror("Error: ");
+            return FALSE;
+        }
+        else{
             // Without sleep, requests are sometimes ignored
             msleep(10);
         }
-        va_end(args);
-
-        free(paths[p]);
     }
-
-    free(paths);
+    va_end(args);
 
     return TRUE;
 }

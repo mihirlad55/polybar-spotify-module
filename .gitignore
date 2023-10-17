@@ -2,3 +2,7 @@
 .vgcore.*
 bin/
 obj/
+
+# added for clang diagnostics
+compile_commands.json
+.cache
