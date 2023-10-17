@@ -59,10 +59,7 @@ dbus_bool_t spotify_update_track(const char *current_trackid) {
     if (last_trackid != NULL && strcmp(current_trackid, last_trackid) != 0) {
         puts("Track Changed");
         // Send message to update track name
-        // if track name changed then spotify is playing.
-        if (send_polybar_msg(4, "#playpause.hook.1", "#previous.hook.1",
-                    "#next.hook.1", "#spotify.hook.1")) {
-            CURRENT_SPOTIFY_STATE = PLAYING;
+        if (send_polybar_msg(1, "#spotify.hook.1")) {
             return TRUE;
     }
 
@@ -167,7 +164,6 @@ DBusHandlerResult properties_changed_handler(DBusConnection *connection,
     if (VERBOSE) puts("Running properties_changed_handler");
     DBusMessageIter iter;
     DBusMessageIter sub_iter;
-    dbus_bool_t is_spotify = FALSE;
     dbus_message_iter_init(message, &iter);
 
     /**
@@ -302,6 +298,10 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
 
+    if (VERBOSE) {
+      printf("name:%s\nold_owner:%s\nnew_owner:%s\n", name, old_owner, new_owner);
+    }
+
     // If name matches spotify and new owner is "", spotify disconnected
     if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
         strcmp(new_owner, "") == 0) {
@@ -310,17 +310,45 @@ DBusHandlerResult name_owner_changed_handler(DBusConnection *connection,
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
+    // If name matches spotify and new owner is "", spotify disconnected
+    if (strcmp(name, "org.mpris.MediaPlayer2.spotify") == 0 &&
+        strcmp(old_owner, "") == 0) {
+
+      puts("Spotify CONNECTED");
+      // dbus new_owner is sender_id
+      spotify_update_sender(new_owner);
+
+      is_spotify = get_spotify_status();
+      if (is_spotify) {
+        update_last_trackid(get_now_playing());
+      }
+
+      return DBUS_HANDLER_RESULT_HANDLED;
+    }
+
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
 void free_user_data(void *memory) {}
 
-dbus_bool_t get_spotify_status(GDBusConnection *conn) {
+// Opted for creating a temporary dbus connection to avoid unnecessary
+// coupling with other levels of dbus funcation handlers in the original code.
+// Ideally, would like to rewrite all of the dbus code in GIO or do this at
+// a lower level, but that would take some additional research. ~Nathan
+dbus_bool_t get_spotify_status() {
+    GDBusConnection *conn;
+    GError *error;
     GDBusProxy *proxy;
-    GError *error = NULL;
     const char *info;
     GVariant *variant;
-    dbus_bool_t player_is_spotify = FALSE;
+    dbus_bool_t player_is_spotify;
+
+    error = NULL;
+    conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+    if (error != NULL){
+        fputs(error->message, stderr);
+        return player_is_spotify = FALSE;
+    }
 
     proxy = g_dbus_proxy_new_sync(conn,
             G_DBUS_PROXY_FLAGS_NONE,
@@ -350,21 +378,25 @@ dbus_bool_t get_spotify_status(GDBusConnection *conn) {
 
     g_variant_unref(variant);
     g_object_unref(proxy);
-    g_object_unref(conn);
 
     player_is_spotify = strcmp(info, "Spotify") == 0;
     return player_is_spotify;
 }
 
-const char* get_now_playing(GDBusConnection *conn) {
+const char* get_now_playing() {
+    GDBusConnection *conn;
+    GError *error;
     GDBusProxy *proxy;
-    GError *error = NULL;
     const char *trackid;
     const char *playback_status;
     GVariant *variant;
 
+    error = NULL;
     conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
-
+    if (error != NULL){
+        fputs(error->message, stderr);
+        return NULL;
+    }
 
     proxy = g_dbus_proxy_new_sync(conn,
             G_DBUS_PROXY_FLAGS_NONE,
@@ -420,7 +452,6 @@ const char* get_now_playing(GDBusConnection *conn) {
     }
 
     g_object_unref(proxy);
-    g_object_unref(conn);
 
     return trackid;
 }
@@ -428,9 +459,6 @@ const char* get_now_playing(GDBusConnection *conn) {
 int main() {
     DBusConnection *connection;
     DBusError err;
-
-    GDBusConnection *conn;
-    GError *error;
 
     dbus_error_init(&err);
 
@@ -440,17 +468,10 @@ int main() {
         return 1;
     }
 
-    error = NULL;
-    conn = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
-    if (error != NULL){
-        fputs(error->message, stderr);
-        return 1;
-    }
-
     // Check for spotify status on init. This runs once.
-    is_spotify = get_spotify_status(conn);
+    is_spotify = get_spotify_status();
     if (is_spotify) {
-      const char * trackid = get_now_playing(conn);
+      const char * trackid = get_now_playing();
       update_last_trackid(trackid);
     }
 
