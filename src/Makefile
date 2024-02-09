@@ -1,11 +1,11 @@
 CC = gcc
-LIBS := dbus-1
-CFLAGS = $(shell pkg-config --cflags dbus-1)
+LIBS := dbus-1 gio-2.0 glib-2.0
+CFLAGS = $(shell pkg-config --cflags --libs dbus-1 gio-2.0 glib-2.0)
 
 LIBS_INC := $(foreach lib,$(LIBS),-l$(lib))
 
 PKG_NAME = polybar-spotify-module
-BASE_INSTALL_PREFIX = 
+BASE_INSTALL_PREFIX =
 
 IDIR = ../include
 ODIR = ../obj
@@ -43,7 +43,7 @@ all: spotifyctl spotify-listener
 debug: spotifyctl spotify-listener
 
 install: spotifyctl spotify-listener
-	install -Dm755 -t $(BASE_INSTALL_PREFIX)$(BIN_INSTALL_DIR) $(EXES) 
+	install -Dm755 -t $(BASE_INSTALL_PREFIX)$(BIN_INSTALL_DIR) $(EXES)
 	install -Dm644 $(LICENSE_FILE) $(BASE_INSTALL_PREFIX)$(LICENSE_INSTALL_PATH)
 	install -Dm644 $(README_FILE) $(BASE_INSTALL_PREFIX)$(README_INSTALL_PATH)
 	install -Dm644 $(SERVICE_FILE_NAME) $(BASE_INSTALL_PREFIX)$(SERVICE_INSTALL_PATH)
@@ -76,4 +76,3 @@ $(ODIR)/%.o: %.c $(DEPS) $(EXE_DEPS)
 
 clean:
 	rm -f $(ODIR)/*.o *~ core vgcore.* $(IDIR)/*~ $(BIN_DIR)/*
-
