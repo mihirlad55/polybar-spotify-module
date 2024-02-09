@@ -88,6 +88,7 @@ Next, add the following spotify modules:
 ```
 [module/previous]
 type = custom/ipc
+format = <output>
 format-font = 2
 ; Default
 hook-0 = echo ""
@@ -98,6 +99,7 @@ click-left = "spotifyctl -q previous"
 
 [module/next]
 type = custom/ipc
+format = <output>
 format-font = 2
 ; Default
 hook-0 = echo ""
@@ -108,6 +110,7 @@ click-left = "spotifyctl -q next"
 
 [module/playpause]
 type = custom/ipc
+format = <output>
 format-font = 2
 ; Default
 hook-0 = echo ""
@@ -120,6 +123,7 @@ click-left = "spotifyctl -q playpause"
 
 [module/spotify]
 type = custom/ipc
+format = <output>
 ; Default
 hook-0 = echo ""
 ; Playing/paused show song name and artist
